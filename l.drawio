@@ -1,0 +1,256 @@
+<mxfile host="65bd71144e">
+    <diagram id="erd_emergency_system" name="ERD 3NF System Diagram">
+        <mxGraphModel dx="3144" dy="832" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="SƠ ĐỒ THỰC THỂ LIÊN KẾT ERD CHUẨN 3NF - HỆ THỐNG THÔNG BÁO KHẨN CẤP" style="text;html=1;strokeColor=none;fillColor=#1F2937;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=18;fontStyle=1;fontColor=#FFFFFF;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="20" width="1450" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_roles" value="roles (Vai trò)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#2563EB;fontColor=#FFFFFF;strokeColor=#1D4ED8;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="90" width="240" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="roles_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_roles" vertex="1">
+                    <mxGeometry y="30" width="240" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="roles_f2" value="     role_name : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_roles" vertex="1">
+                    <mxGeometry y="60" width="240" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="roles_f3" value="     description : VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_roles" vertex="1">
+                    <mxGeometry y="90" width="240" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_departments" value="departments (Phòng ban/Khu vực)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#FFFFFF;strokeColor=#047857;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="90" width="260" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="dept_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_departments" vertex="1">
+                    <mxGeometry y="30" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dept_f2" value="     department_code : VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_departments" vertex="1">
+                    <mxGeometry y="60" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dept_f3" value="     department_name : VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_departments" vertex="1">
+                    <mxGeometry y="90" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dept_f4" value="     location_info : VARCHAR(200)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_departments" vertex="1">
+                    <mxGeometry y="120" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_users" value="users (Người dùng/Tài khoản)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#2563EB;fontColor=#FFFFFF;strokeColor=#1D4ED8;" parent="1" vertex="1">
+                    <mxGeometry x="-80" y="360" width="260" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="30" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f2" value="FK  role_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="60" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f3" value="FK  department_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="90" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f4" value="     username : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="120" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f5" value="     password_hash : VARCHAR(255)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="150" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f6" value="     full_name : VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="180" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f7" value="     status : VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="210" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="usr_f8" value="     created_at : DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_users" vertex="1">
+                    <mxGeometry y="240" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_devices" value="devices (Thiết bị/Máy trạm)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#059669;fontColor=#FFFFFF;strokeColor=#047857;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="280" width="260" height="270" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="30" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f2" value="FK  department_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="60" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f3" value="     device_code : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="90" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f4" value="     device_name : VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="120" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f5" value="     ip_address : VARCHAR(45)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="150" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f6" value="     mac_address : VARCHAR(17)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="180" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f7" value="     status : VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="210" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="dev_f8" value="     last_seen : DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_devices" vertex="1">
+                    <mxGeometry y="240" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_types" value="alert_types (Loại sự cố)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#FFFFFF;strokeColor=#B91C1C;" parent="1" vertex="1">
+                    <mxGeometry x="1180" y="380" width="250" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="typ_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_types" vertex="1">
+                    <mxGeometry y="30" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="typ_f2" value="     type_code : VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_types" vertex="1">
+                    <mxGeometry y="60" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="typ_f3" value="     type_name : VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_types" vertex="1">
+                    <mxGeometry y="90" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="typ_f4" value="     icon_name : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_types" vertex="1">
+                    <mxGeometry y="120" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_severities" value="severities (Mức độ nghiêm trọng)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#D97706;fontColor=#FFFFFF;strokeColor=#B45309;" parent="1" vertex="1">
+                    <mxGeometry x="750" y="65" width="250" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="sev_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_severities" vertex="1">
+                    <mxGeometry y="30" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sev_f2" value="     severity_code : VARCHAR(20)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_severities" vertex="1">
+                    <mxGeometry y="60" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sev_f3" value="     severity_name : VARCHAR(100)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_severities" vertex="1">
+                    <mxGeometry y="90" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="sev_f4" value="     color_hex : VARCHAR(7)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_severities" vertex="1">
+                    <mxGeometry y="120" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_alerts" value="alerts (Thông báo cảnh báo)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#DC2626;fontColor=#FFFFFF;strokeColor=#B91C1C;" parent="1" vertex="1">
+                    <mxGeometry x="1050" y="810" width="270" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="30" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f2" value="FK  alert_type_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="60" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f3" value="FK  severity_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="90" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f4" value="FK  sender_user_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="120" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f5" value="     alert_code : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="150" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f6" value="     location : VARCHAR(200)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="180" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f7" value="     message : TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="210" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f8" value="     sender_ip : VARCHAR(45)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="240" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="alt_f9" value="     created_at : DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_alerts" vertex="1">
+                    <mxGeometry y="270" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_receipts" value="alert_receipts (Nhật ký máy nhận)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#7C3AED;fontColor=#FFFFFF;strokeColor=#6D28D9;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="590" width="270" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="rec_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_receipts" vertex="1">
+                    <mxGeometry y="30" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="rec_f2" value="FK  alert_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_receipts" vertex="1">
+                    <mxGeometry y="60" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="rec_f3" value="FK  device_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_receipts" vertex="1">
+                    <mxGeometry y="90" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="rec_f4" value="     received_at : DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_receipts" vertex="1">
+                    <mxGeometry y="120" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="rec_f5" value="     receipt_status : VARCHAR(30)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_receipts" vertex="1">
+                    <mxGeometry y="150" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="ent_audit" value="audit_logs (Nhật ký hệ thống)" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;subPerRow=1;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#4B5563;fontColor=#FFFFFF;strokeColor=#374151;" parent="1" vertex="1">
+                    <mxGeometry x="-10" y="860" width="270" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f1" value="PK  id : INT (AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="30" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f2" value="FK  user_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="60" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f3" value="FK  device_id : INT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontColor=#D97706;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="90" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f4" value="     action : VARCHAR(50)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="120" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f5" value="     description : TEXT" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="150" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f6" value="     ip_address : VARCHAR(45)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="180" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aud_f7" value="     created_at : DATETIME" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" parent="ent_audit" vertex="1">
+                    <mxGeometry y="210" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel_roles_users" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#2563EB;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_roles" target="ent_users" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel_depts_users" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#059669;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_departments" target="ent_users" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="350" y="165"/>
+                            <mxPoint x="350" y="415"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel_depts_devices" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#059669;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_departments" target="ent_devices" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel_users_alerts" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DC2626;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_users" target="ent_alerts" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="310" y="430"/>
+                            <mxPoint x="750" y="430"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel_types_alerts" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DC2626;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_types" target="ent_alerts" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel_severities_alerts" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#D97706;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_severities" target="ent_alerts" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1185" y="250"/>
+                            <mxPoint x="950" y="250"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel_alerts_receipts" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7C3AED;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_alerts" target="ent_receipts" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rel_devices_receipts" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#7C3AED;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_devices" target="ent_receipts" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="530" y="570"/>
+                            <mxPoint x="1235" y="570"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel_users_audit" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4B5563;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_users" target="ent_audit" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="590"/>
+                            <mxPoint x="300" y="590"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="rel_devices_audit" value="1 : N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#4B5563;startArrow=oval;startFill=1;endArrow=block;endFill=1;" parent="1" source="ent_devices" target="ent_audit" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="480" y="580"/>
+                            <mxPoint x="420" y="580"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
