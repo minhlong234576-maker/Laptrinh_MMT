@@ -8,8 +8,10 @@ import emergencybroadcast.model.User;
 import emergencybroadcast.ui.UITheme;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,6 +29,7 @@ public class HistoryFrame extends javax.swing.JFrame {
     private final AlertDAO alertDAO;
     private final AlertReceiptDAO receiptDAO;
     private DefaultTableModel tableModel;
+    private JLabel lblStatusBar;
 
     public HistoryFrame(User user) {
         this.currentUser = user;
@@ -49,10 +52,60 @@ public class HistoryFrame extends javax.swing.JFrame {
         btnViewDetails.setForeground(Color.BLACK);
         btnBack.setBackground(UITheme.BG_DARK_CARD);
         btnBack.setForeground(Color.WHITE);
+        btnExportCSV.setBackground(UITheme.BG_DARK_CARD);
+        btnExportCSV.setForeground(Color.WHITE);
+        btnResetFilter.setBackground(UITheme.BG_DARK_CARD);
+        btnResetFilter.setForeground(Color.WHITE);
 
         UITheme.styleTable(tblHistory);
         UITheme.styleTextField(txtSearchKey);
         tableModel = (DefaultTableModel) tblHistory.getModel();
+
+        // Tô màu severity trong bảng lịch sử
+        tblHistory.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    Object sev = table.getModel().getValueAt(row, 2);
+                    String severity = sev != null ? sev.toString() : "";
+                    Color rowBg;
+                    switch (severity.toUpperCase()) {
+                        case "CRITICAL": rowBg = new Color(80, 20, 20); break;
+                        case "HIGH":     rowBg = new Color(80, 45, 15); break;
+                        case "MEDIUM":   rowBg = new Color(70, 60, 10); break;
+                        case "LOW":      rowBg = new Color(15, 60, 30); break;
+                        default:         rowBg = (row % 2 == 0) ? UITheme.BG_DARK_SECONDARY : UITheme.BG_DARK_PRIMARY;
+                    }
+                    c.setBackground(rowBg);
+                    // Tô màu chữ theo severity cho cột mức độ
+                    if (column == 2) {
+                        c.setForeground(UITheme.getSeverityColor(severity));
+                        ((JLabel) c).setFont(UITheme.FONT_BODY_BOLD);
+                    } else {
+                        c.setForeground(UITheme.TEXT_PRIMARY);
+                    }
+                }
+                return c;
+            }
+        });
+
+        // Tooltip
+        btnFilter.setToolTipText("Lọc dữ liệu (Ctrl+F)");
+        btnViewDetails.setToolTipText("Xem chi tiết cảnh báo (Ctrl+D)");
+        btnExportCSV.setToolTipText("Xuất ra file CSV (Ctrl+E)");
+
+        // ---- Status Bar ----
+        lblStatusBar = new JLabel();
+        lblStatusBar.setFont(UITheme.FONT_SMALL);
+        lblStatusBar.setForeground(UITheme.TEXT_SECONDARY);
+        lblStatusBar.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        lblStatusBar.setOpaque(true);
+        lblStatusBar.setBackground(UITheme.BG_DARK_PRIMARY);
+        String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
+        lblStatusBar.setText("  👤 " + user + "   |   📂 Xuất CSV hỗ trợ Excel (UTF-8 BOM)   |   Ctrl+F: Lọc  |  Ctrl+R: Refresh  |  Ctrl+D: Chi tiết");
+        getContentPane().add(lblStatusBar, BorderLayout.PAGE_END);
     }
 
     /**
@@ -185,6 +238,30 @@ public class HistoryFrame extends javax.swing.JFrame {
 
         btnViewDetails.addActionListener(e -> viewAlertDetails());
         btnExportCSV.addActionListener(e -> exportToCSV());
+
+        // ---- Phím tắt ----
+        getRootPane().registerKeyboardAction(
+            e -> performFilter(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+            e -> loadHistoryAlerts(null, null),
+            KeyStroke.getKeyStroke(KeyEvent.VK_R, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+            e -> viewAlertDetails(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_D, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        getRootPane().registerKeyboardAction(
+            e -> exportToCSV(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_E, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        // Enter trong ô search = lọc
+        txtSearchKey.addActionListener(e -> performFilter());
     }
 
     private void performFilter() {
@@ -196,8 +273,25 @@ public class HistoryFrame extends javax.swing.JFrame {
         if (keyword.isEmpty()) {
             keyword = null;
         }
-
-        loadHistoryAlerts(severity, keyword);
+        // Loading cursor
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        final String finalSeverity = severity;
+        final String finalKeyword = keyword;
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override protected Void doInBackground() {
+                loadHistoryAlerts(finalSeverity, finalKeyword);
+                return null;
+            }
+            @Override protected void done() {
+                setCursor(Cursor.getDefaultCursor());
+                if (lblStatusBar != null) {
+                    lblStatusBar.setText("  ↻ Tìm thấy " + tableModel.getRowCount() + " kết quả"
+                        + (finalSeverity != null ? "  |  Mức: " + finalSeverity : "")
+                        + (finalKeyword != null ? "  |  Từ khóa: '" + finalKeyword + "'" : ""));
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void loadHistoryAlerts(String severity, String keyword) {

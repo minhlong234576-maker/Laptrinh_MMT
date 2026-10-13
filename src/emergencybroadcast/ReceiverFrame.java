@@ -8,6 +8,7 @@ import emergencybroadcast.network.MulticastReceiver;
 import emergencybroadcast.ui.UITheme;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.net.InetAddress;
@@ -24,6 +25,15 @@ public class ReceiverFrame extends javax.swing.JFrame {
     private MulticastReceiver multicastReceiver;
     private Alert currentAlert;
     private DefaultTableModel tableModel;
+
+    // ---- Flash border đỏ khi có tin mới ----
+    private javax.swing.Timer flashTimer;
+    private int flashCount = 0;
+    private static final javax.swing.border.Border BORDER_ALERT =
+        BorderFactory.createLineBorder(new Color(239, 68, 68), 4);
+
+    // ---- Status bar ----
+    private JLabel lblStatusBar;
 
     public ReceiverFrame(User user) {
         this.currentUser = user;
@@ -46,6 +56,29 @@ public class ReceiverFrame extends javax.swing.JFrame {
 
         UITheme.styleTable(tblReceivedAlerts);
         tableModel = (DefaultTableModel) tblReceivedAlerts.getModel();
+
+        // Tô màu severity trong bảng lịch sử
+        applySeverityColorRenderer();
+
+        // Tooltip
+        btnConfirmReceipt.setToolTipText("Xác nhận đã tiếp nhận (ACK) - ghi vào DB");
+        btnRefreshHistory.setToolTipText("Tải lại lịch sử (Ctrl+R)");
+
+        // ---- Status Bar ----
+        lblStatusBar = new JLabel();
+        lblStatusBar.setFont(UITheme.FONT_SMALL);
+        lblStatusBar.setForeground(UITheme.TEXT_SECONDARY);
+        lblStatusBar.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        lblStatusBar.setOpaque(true);
+        lblStatusBar.setBackground(UITheme.BG_DARK_PRIMARY);
+        try {
+            String ip = InetAddress.getLocalHost().getHostAddress();
+            String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
+            lblStatusBar.setText("  🖥 IP máy trạm: " + ip + "   |   👤 " + user + "   |   🌐 Đang lắng nghe: 239.10.10.10:5000");
+        } catch (Exception e) {
+            lblStatusBar.setText("Đang lắng nghe UDP Multicast...");
+        }
+        getContentPane().add(lblStatusBar, BorderLayout.PAGE_END);
     }
 
     /**
@@ -226,35 +259,151 @@ public class ReceiverFrame extends javax.swing.JFrame {
     private void onAlertReceived(Alert alert) {
         SwingUtilities.invokeLater(() -> {
             this.currentAlert = alert;
-            lblAlertTitle.setText(alert.getLocation());
-            lblSeverity.setText("Mức độ: " + alert.getSeverity() + " | Mã tin: " + alert.getAlertCode() + " | Người phát: " + alert.getSenderUsername());
+
+            // Cập nhật UI
+            lblAlertTitle.setText("⚠️ " + alert.getLocation());
+            lblSeverity.setText("Mức độ: " + alert.getSeverity()
+                + " | Loại: " + alert.getAlertType()
+                + " | Mã tin: " + alert.getAlertCode()
+                + " | Người phát: " + alert.getSenderUsername());
             txtAlertContent.setText(alert.getMessage());
+
+            // Tô màu severity cho label
+            Color sevColor = UITheme.getSeverityColor(alert.getSeverity());
+            lblAlertTitle.setForeground(sevColor);
+            lblSeverity.setForeground(sevColor);
+
             btnConfirmReceipt.setEnabled(true);
-            Toolkit.getDefaultToolkit().beep();
+
+            // Flash border đỏ nhấp nháy
+            startFlashBorder();
+
+            // Âm thanh báo động
+            playAlertSound(alert.getSeverity());
+
+            // Popup cảnh báo nổi bật (chạy sau 300ms để UI kịp vẽ)
+            showAlertPopup(alert);
         });
+    }
+
+    /**
+     * Nhấp nháy border đỏ 10 lần khi có cảnh báo mới.
+     */
+    private void startFlashBorder() {
+        if (flashTimer != null && flashTimer.isRunning()) {
+            flashTimer.stop();
+        }
+        flashCount = 0;
+        getRootPane().setBorder(BORDER_ALERT);
+        // Không gọi getContentPane().setBorder() vì Container không hỗ trợ phương thức này
+
+        flashTimer = new javax.swing.Timer(300, e -> {
+            flashCount++;
+            boolean on = (flashCount % 2 == 0);
+            Color col = on ? new Color(239, 68, 68) : new Color(150, 20, 20);
+            getRootPane().setBorder(BorderFactory.createLineBorder(col, 4));
+            if (flashCount >= 20) { // 10 lần nhấp nháy
+                flashTimer.stop();
+                getRootPane().setBorder(BorderFactory.createLineBorder(new Color(239, 68, 68), 3)); // giữ màu đỏ
+            }
+        });
+        flashTimer.start();
+    }
+
+    /**
+     * Phát âm thanh báo theo mức độ cảnh báo.
+     */
+    private void playAlertSound(String severity) {
+        int beepCount = 1;
+        if ("CRITICAL".equalsIgnoreCase(severity)) beepCount = 5;
+        else if ("HIGH".equalsIgnoreCase(severity)) beepCount = 3;
+        else if ("MEDIUM".equalsIgnoreCase(severity)) beepCount = 2;
+
+        final int count = beepCount;
+        new Thread(() -> {
+            for (int i = 0; i < count; i++) {
+                Toolkit.getDefaultToolkit().beep();
+                try { Thread.sleep(400); } catch (InterruptedException ignored) {}
+            }
+        }).start();
+    }
+
+    /**
+     * Hiển thị popup nổi bật thông tin cảnh báo mới.
+     */
+    private void showAlertPopup(Alert alert) {
+        // Chạy sau 200ms để tránh block UI
+        javax.swing.Timer popupTimer = new javax.swing.Timer(200, e -> {
+            String icon;
+            switch (alert.getSeverity().toUpperCase()) {
+                case "CRITICAL": icon = "🚨"; break;
+                case "HIGH":     icon = "⚠️"; break;
+                case "MEDIUM":   icon = "🔶"; break;
+                default:         icon = "ℹ️"; break;
+            }
+
+            String msg = icon + " CẢNH BÁO MỚI NHẬN! " + icon + "\n\n"
+                + "▶ Mức độ:    " + alert.getSeverity() + "\n"
+                + "▶ Loại:       " + alert.getAlertType() + "\n"
+                + "▶ Địa điểm:  " + alert.getLocation() + "\n"
+                + "▶ Mã tin:     " + alert.getAlertCode() + "\n\n"
+                + "💬 Nội dung:\n" + alert.getMessage() + "\n\n"
+                + "Nhấn OK và click 'XÁC NHẬN ĐÃ NHẬN TIN' để gửi ACK.";
+
+            int msgType = "CRITICAL".equalsIgnoreCase(alert.getSeverity())
+                ? JOptionPane.ERROR_MESSAGE : JOptionPane.WARNING_MESSAGE;
+
+            JOptionPane.showMessageDialog(ReceiverFrame.this, msg,
+                icon + " CẢNH BÁO: " + alert.getSeverity() + " - " + alert.getAlertType(),
+                msgType);
+        });
+        popupTimer.setRepeats(false);
+        popupTimer.start();
     }
 
     private void confirmReceipt() {
         if (currentAlert == null) return;
 
-        try {
-            String receiverName = currentUser != null ? currentUser.getFullName() : ("Máy Trạm (" + InetAddress.getLocalHost().getHostName() + ")");
-            String receiverIp = InetAddress.getLocalHost().getHostAddress();
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        btnConfirmReceipt.setEnabled(false);
 
-            AlertReceipt receipt = new AlertReceipt(currentAlert.getId(), receiverName, receiverIp, "ACKNOWLEDGED");
-            boolean success = receiptDAO.insertReceipt(receipt);
+        new Thread(() -> {
+            try {
+                String receiverName = currentUser != null ? currentUser.getFullName() : ("Máy Trạm (" + InetAddress.getLocalHost().getHostName() + ")");
+                String receiverIp = InetAddress.getLocalHost().getHostAddress();
 
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Đã gửi phản hồi xác nhận (ACK) thành công!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                btnConfirmReceipt.setEnabled(false);
-                lblSeverity.setText("Mức độ: " + currentAlert.getSeverity() + " (ĐÃ XÁC NHẬN ACK)");
-                loadReceiptHistory();
-            } else {
-                JOptionPane.showMessageDialog(this, "Không thể lưu xác nhận vào cơ sở dữ liệu!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                AlertReceipt receipt = new AlertReceipt(currentAlert.getId(), receiverName, receiverIp, "ACKNOWLEDGED");
+                boolean success = receiptDAO.insertReceipt(receipt);
+
+                SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    if (success) {
+                        JOptionPane.showMessageDialog(ReceiverFrame.this,
+                            "✅ Đã gửi phản hồi xác nhận (ACK) thành công!",
+                            "ACK Gửi Thành Công", JOptionPane.INFORMATION_MESSAGE);
+                        lblSeverity.setText("Mức độ: " + currentAlert.getSeverity() + " (ĐÃ XÁC NHẬN ACK)");
+                        lblSeverity.setForeground(UITheme.ACCENT_EMERALD);
+                        // Xóa flash border về màu xanh
+                        getRootPane().setBorder(BorderFactory.createLineBorder(UITheme.ACCENT_EMERALD, 3));
+                        if (flashTimer != null) flashTimer.stop();
+                        loadReceiptHistory();
+                    } else {
+                        btnConfirmReceipt.setEnabled(true);
+                        JOptionPane.showMessageDialog(ReceiverFrame.this,
+                            "❌ Không thể lưu xác nhận vào cơ sở dữ liệu!",
+                            "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    btnConfirmReceipt.setEnabled(true);
+                    JOptionPane.showMessageDialog(ReceiverFrame.this,
+                        "Lỗi khi tạo bản tin xác nhận ACK: " + ex.getMessage(),
+                        "Lỗi", JOptionPane.ERROR_MESSAGE);
+                });
             }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi khi tạo bản tin xác nhận ACK: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-        }
+        }).start();
     }
 
     private void loadReceiptHistory() {
@@ -273,8 +422,35 @@ public class ReceiverFrame extends javax.swing.JFrame {
         }
     }
 
+    /**
+     * Tô màu dòng bảng lịch sử theo trạng thái.
+     */
+    private void applySeverityColorRenderer() {
+        tblReceivedAlerts.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    Object statusObj = table.getModel().getValueAt(row, 5);
+                    String status = statusObj != null ? statusObj.toString() : "";
+                    Color rowBg;
+                    if ("ACKNOWLEDGED".equalsIgnoreCase(status)) {
+                        rowBg = new Color(15, 60, 30); // xanh lá nhạt
+                    } else {
+                        rowBg = (row % 2 == 0) ? UITheme.BG_DARK_SECONDARY : UITheme.BG_DARK_PRIMARY;
+                    }
+                    c.setBackground(rowBg);
+                    c.setForeground(UITheme.TEXT_PRIMARY);
+                }
+                return c;
+            }
+        });
+    }
+
     @Override
     public void dispose() {
+        if (flashTimer != null) flashTimer.stop();
         stopListening();
         super.dispose();
     }

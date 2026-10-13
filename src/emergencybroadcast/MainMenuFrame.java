@@ -4,6 +4,7 @@ import emergencybroadcast.model.User;
 import emergencybroadcast.ui.UITheme;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 
 /**
  * Giao diện Menu Chính (MainMenuFrame).
@@ -12,6 +13,8 @@ import java.awt.*;
 public class MainMenuFrame extends javax.swing.JFrame {
 
     private final User currentUser;
+    // Nút khẩn cấp (ngoài GEN-BEGIN block)
+    private javax.swing.JButton btnQuickAlert;
 
     public MainMenuFrame(User user) {
         this.currentUser = user;
@@ -40,6 +43,53 @@ public class MainMenuFrame extends javax.swing.JFrame {
         btnReceiver.setForeground(Color.WHITE);
         btnHistory.setForeground(Color.WHITE);
         btnLogout.setForeground(UITheme.ACCENT_ROSE);
+
+        // ===== Nút KHẨN CẤP to đỏ nổi bật =====
+        btnQuickAlert = new javax.swing.JButton();
+        btnQuickAlert.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        btnQuickAlert.setText("<html><center>" +
+            "<font size=5>PHÁT CẢNH BÁO KHẨN CẤP NGAY</font><br>" +
+            "<font color=#ffcccc size=3>1 click = phát tức thì • Cháy / Khí Độc / An Ninh / Mất Điện / Lũ</font>" +
+            "</center></html>");
+        btnQuickAlert.setBackground(new Color(180, 20, 20));
+        btnQuickAlert.setForeground(Color.WHITE);
+        btnQuickAlert.setFocusPainted(false);
+        btnQuickAlert.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnQuickAlert.setPreferredSize(new Dimension(0, 80));
+        btnQuickAlert.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+            javax.swing.BorderFactory.createLineBorder(new Color(255, 80, 80), 2),
+            javax.swing.BorderFactory.createEmptyBorder(10, 20, 10, 20)
+        ));
+        btnQuickAlert.setToolTipText("Mở màn hình phát cảnh báo khẩn cấp 1-click (Ctrl+Q)");
+
+        // Hover effect
+        btnQuickAlert.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnQuickAlert.setBackground(new Color(220, 30, 30));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                btnQuickAlert.setBackground(new Color(180, 20, 20));
+            }
+        });
+
+        // Thêm vào content pane phía trên menuContainer
+        javax.swing.JPanel quickPanel = new javax.swing.JPanel(new BorderLayout());
+        quickPanel.setBackground(new Color(30, 5, 5));
+        quickPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        quickPanel.add(btnQuickAlert, BorderLayout.CENTER);
+        getContentPane().add(quickPanel, BorderLayout.CENTER);
+
+        // Đẩy menuContainer xuống phía dưới
+        getContentPane().remove(menuContainer);
+        getContentPane().add(quickPanel, BorderLayout.CENTER);
+
+        // Xây lại layout: header (NORTH) + quickPanel (CENTER_NORTH) + menu (CENTER)
+        javax.swing.JPanel mainCenter = new javax.swing.JPanel(new BorderLayout(0, 10));
+        mainCenter.setBackground(UITheme.BG_DARK_PRIMARY);
+        mainCenter.add(quickPanel, BorderLayout.NORTH);
+        mainCenter.add(menuContainer, BorderLayout.CENTER);
+
+        getContentPane().add(mainCenter, BorderLayout.CENTER);
     }
 
     /**
@@ -103,6 +153,11 @@ public class MainMenuFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void setupEvents() {
+        // Nút khẩn cấp 1-click
+        btnQuickAlert.addActionListener(e -> {
+            new QuickAlertFrame(currentUser).setVisible(true);
+        });
+
         btnSender.addActionListener(e -> {
             new SenderFrame(currentUser).setVisible(true);
             this.dispose();
@@ -122,6 +177,14 @@ public class MainMenuFrame extends javax.swing.JFrame {
             new LoginFrame().setVisible(true);
             this.dispose();
         });
+
+        // Ctrl+Q = mở QuickAlertFrame từ bất kỳ đâu
+        getRootPane().registerKeyboardAction(
+            e -> new QuickAlertFrame(currentUser).setVisible(true),
+            javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_Q, KeyEvent.CTRL_DOWN_MASK),
+            javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        btnQuickAlert.setToolTipText("Mở phát nhanh (Ctrl+Q)");
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

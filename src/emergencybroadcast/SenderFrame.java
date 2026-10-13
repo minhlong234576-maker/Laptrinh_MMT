@@ -7,8 +7,10 @@ import emergencybroadcast.network.MulticastSender;
 import emergencybroadcast.ui.UITheme;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.net.InetAddress;
 import java.util.List;
 
@@ -21,6 +23,10 @@ public class SenderFrame extends javax.swing.JFrame {
     private final User currentUser;
     private final AlertDAO alertDAO;
     private DefaultTableModel tableModel;
+    // Thêm các component mới ngoài GEN-BEGIN block
+    private JComboBox<String> cmbAlertType;
+    private JTextField txtLocation;
+    private JLabel lblStatusBar;
 
     public SenderFrame(User user) {
         this.currentUser = user;
@@ -30,7 +36,7 @@ public class SenderFrame extends javax.swing.JFrame {
         setupEvents();
         loadAlertHistory();
 
-        setSize(1000, 750);
+        setSize(1050, 770);
         setLocationRelativeTo(null);
     }
 
@@ -45,6 +51,132 @@ public class SenderFrame extends javax.swing.JFrame {
         UITheme.styleTextField(txtAlertTitle);
 
         tableModel = (DefaultTableModel) tblSentAlerts.getModel();
+
+        // ---- Thêm ComboBox Loại Sự Cố ----
+        cmbAlertType = new JComboBox<>(new String[]{
+            "🔥 FIRE - Cháy nổ",
+            "🔒 SECURITY - An ninh",
+            "⚡ POWER - Mất điện",
+            "☠️ GAS - Rò khí độc",
+            "🌊 FLOOD - Lũ lụt",
+            "📢 OTHER - Khác"
+        });
+        cmbAlertType.setFont(UITheme.FONT_BODY);
+        cmbAlertType.setBackground(UITheme.BG_DARK_SECONDARY);
+        cmbAlertType.setForeground(UITheme.TEXT_PRIMARY);
+
+        // ---- Thêm field Địa Điểm ----
+        txtLocation = new JTextField();
+        UITheme.styleTextField(txtLocation);
+        txtLocation.setToolTipText("Ví dụ: Tầng 3 - Phòng 302");
+
+        // Chèn vào formPanel trước Severity (index 0)
+        JLabel lblType = new JLabel("Loại sự cố:");
+        lblType.setFont(UITheme.FONT_BODY_BOLD);
+        lblType.setForeground(UITheme.TEXT_PRIMARY);
+
+        JLabel lblLoc = new JLabel("Địa điểm xảy ra:");
+        lblLoc.setFont(UITheme.FONT_BODY_BOLD);
+        lblLoc.setForeground(UITheme.TEXT_PRIMARY);
+
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.gridx = 0; gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0; gbc.insets = new java.awt.Insets(10, 10, 5, 10);
+
+        // Xây lại thứ tự bằng cách thêm vào đúng vị trí
+        // Thêm label + combo type ngay trước lblSeverity
+        java.awt.GridBagConstraints gbcType1 = new java.awt.GridBagConstraints();
+        gbcType1.gridx = 0; gbcType1.gridy = 0;
+        gbcType1.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbcType1.weightx = 1.0;
+        gbcType1.insets = new java.awt.Insets(10, 10, 5, 10);
+
+        java.awt.GridBagConstraints gbcType2 = new java.awt.GridBagConstraints();
+        gbcType2.gridx = 0; gbcType2.gridy = 1;
+        gbcType2.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbcType2.weightx = 1.0;
+        gbcType2.insets = new java.awt.Insets(0, 10, 10, 10);
+
+        // Shift tất cả component hiện có xuống 4 row
+        for (Component c : formPanel.getComponents()) {
+            java.awt.GridBagLayout gbl = (java.awt.GridBagLayout) formPanel.getLayout();
+            java.awt.GridBagConstraints exist = gbl.getConstraints(c);
+            exist.gridy += 4;
+            gbl.setConstraints(c, exist);
+        }
+        // Cập nhật lại lblTitle (tiêu đề bản tin) thành "Tiêu đề / Nội dung tóm tắt"
+        lblAlertTitle.setText("Tóm tắt sự cố (tiêu đề):");
+
+        formPanel.add(lblType, gbcType1);
+        formPanel.add(cmbAlertType, gbcType2);
+
+        java.awt.GridBagConstraints gbcLoc1 = new java.awt.GridBagConstraints();
+        gbcLoc1.gridx = 0; gbcLoc1.gridy = 2;
+        gbcLoc1.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbcLoc1.weightx = 1.0;
+        gbcLoc1.insets = new java.awt.Insets(0, 10, 5, 10);
+
+        java.awt.GridBagConstraints gbcLoc2 = new java.awt.GridBagConstraints();
+        gbcLoc2.gridx = 0; gbcLoc2.gridy = 3;
+        gbcLoc2.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gbcLoc2.weightx = 1.0;
+        gbcLoc2.insets = new java.awt.Insets(0, 10, 10, 10);
+
+        formPanel.add(lblLoc, gbcLoc1);
+        formPanel.add(txtLocation, gbcLoc2);
+
+        formPanel.revalidate();
+        formPanel.repaint();
+
+        // ---- Tô màu severity trong bảng ----
+        applySeverityColorRenderer();
+
+        // ---- Status Bar ----
+        lblStatusBar = new JLabel();
+        lblStatusBar.setFont(UITheme.FONT_SMALL);
+        lblStatusBar.setForeground(UITheme.TEXT_SECONDARY);
+        lblStatusBar.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
+        lblStatusBar.setOpaque(true);
+        lblStatusBar.setBackground(UITheme.BG_DARK_PRIMARY);
+        try {
+            String ip = InetAddress.getLocalHost().getHostAddress();
+            String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
+            lblStatusBar.setText("  🖥 IP: " + ip + "   |   👤 " + user + "   |   🌐 Multicast: 239.10.10.10:5000   |   Ctrl+Q = Phát nhanh khẩn cấp");
+        } catch (Exception e) {
+            lblStatusBar.setText("Trạng thái hệ thống");
+        }
+        getContentPane().add(lblStatusBar, BorderLayout.PAGE_END);
+
+        // ---- Nút PHÁT NHANH thêm vào header ----
+        JButton btnQuickShortcut = new JButton("PHAT NHANH");
+        btnQuickShortcut.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnQuickShortcut.setBackground(new Color(180, 20, 20));
+        btnQuickShortcut.setForeground(Color.WHITE);
+        btnQuickShortcut.setFocusPainted(false);
+        btnQuickShortcut.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnQuickShortcut.setToolTipText("Mở màn hình phát khẩn cấp 1-click (Ctrl+Q)");
+        btnQuickShortcut.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 80, 80), 1),
+            BorderFactory.createEmptyBorder(6, 14, 6, 14)
+        ));
+        btnQuickShortcut.addActionListener(e -> new QuickAlertFrame(currentUser).setVisible(true));
+        btnQuickShortcut.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnQuickShortcut.setBackground(new Color(220, 30, 30));
+            }
+            @Override public void mouseExited(java.awt.event.MouseEvent e) {
+                btnQuickShortcut.setBackground(new Color(180, 20, 20));
+            }
+        });
+
+        // Thêm vào headerPanel cạnh nút Back (tạo sub-panel)
+        Component backComp = headerPanel.getComponent(1); // btnBack
+        headerPanel.remove(backComp);
+        JPanel headerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        headerRight.setOpaque(false);
+        headerRight.add(btnQuickShortcut);
+        headerRight.add(btnBack);
+        headerPanel.add(headerRight, java.awt.BorderLayout.EAST);
     }
 
     /**
@@ -194,11 +326,11 @@ public class SenderFrame extends javax.swing.JFrame {
         tblSentAlerts.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {},
             new String [] {
-                "ID", "Mã tin", "Mức độ", "Địa điểm", "Thời gian"
+                "ID", "Mã tin", "Loại", "Mức độ", "Địa điểm", "Thời gian"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false
+                false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -239,61 +371,169 @@ public class SenderFrame extends javax.swing.JFrame {
         btnSendAlert.addActionListener(e -> performSendAlert());
         btnRefreshTable.addActionListener(e -> loadAlertHistory());
         btnDeleteAlert.addActionListener(e -> deleteSelectedAlert());
+
+        // ---- Phím tắt ----
+        // Ctrl+Enter hoặc Alt+S = Gửi cảnh báo
+        getRootPane().registerKeyboardAction(
+            e -> performSendAlert(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        // Ctrl+R = Tải lại bảng
+        getRootPane().registerKeyboardAction(
+            e -> loadAlertHistory(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_R, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        // Ctrl+L = Làm mới form
+        getRootPane().registerKeyboardAction(
+            e -> clearForm(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // Ctrl+Q = mở QuickAlertFrame ngay từ SenderFrame
+        getRootPane().registerKeyboardAction(
+            e -> new QuickAlertFrame(currentUser).setVisible(true),
+            KeyStroke.getKeyStroke(KeyEvent.VK_Q, KeyEvent.CTRL_DOWN_MASK),
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // Tooltip phím tắt
+        btnSendAlert.setToolTipText("Phát cảnh báo (Ctrl+Enter)");
+        btnRefreshTable.setToolTipText("Tải lại danh sách (Ctrl+R)");
+        btnClearForm.setToolTipText("Làm mới form (Ctrl+L)");
     }
 
     private void clearForm() {
         txtAlertTitle.setText("");
         txtContent.setText("");
+        if (txtLocation != null) txtLocation.setText("");
         cmbSeverity.setSelectedIndex(0);
+        if (cmbAlertType != null) cmbAlertType.setSelectedIndex(0);
+        txtAlertTitle.requestFocus();
     }
 
     private void performSendAlert() {
         String title = txtAlertTitle.getText().trim();
         String content = txtContent.getText().trim();
+        String location = (txtLocation != null) ? txtLocation.getText().trim() : title;
+
         String severitySel = (String) cmbSeverity.getSelectedItem();
         String severity = "CRITICAL";
-
         if (severitySel != null) {
             if (severitySel.contains("HIGH")) severity = "HIGH";
             else if (severitySel.contains("MEDIUM")) severity = "MEDIUM";
             else if (severitySel.contains("LOW")) severity = "LOW";
         }
 
-        if (title.isEmpty() || content.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tiêu đề và nội dung cảnh báo!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+        // Lấy loại sự cố từ ComboBox mới
+        String alertType = "SECURITY";
+        if (cmbAlertType != null) {
+            String typeSel = (String) cmbAlertType.getSelectedItem();
+            if (typeSel != null) {
+                if (typeSel.contains("FIRE")) alertType = "FIRE";
+                else if (typeSel.contains("POWER")) alertType = "POWER";
+                else if (typeSel.contains("GAS")) alertType = "GAS";
+                else if (typeSel.contains("FLOOD")) alertType = "FLOOD";
+                else if (typeSel.contains("OTHER")) alertType = "OTHER";
+                else alertType = "SECURITY";
+            }
+        }
+
+        // Validation
+        if (title.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập tiêu đề / tóm tắt sự cố!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            txtAlertTitle.requestFocus();
+            return;
+        }
+        if (location.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập địa điểm xảy ra sự cố!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            txtLocation.requestFocus();
+            return;
+        }
+        if (content.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập nội dung chi tiết cảnh báo!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            txtContent.requestFocus();
             return;
         }
 
-        String alertCode = "ALT-" + System.currentTimeMillis() % 100000;
-        String senderUser = currentUser != null ? currentUser.getUsername() : "admin";
-        String senderIp = "127.0.0.1";
-        try {
-            senderIp = InetAddress.getLocalHost().getHostAddress();
-        } catch (Exception ignored) {}
-
-        Alert alert = new Alert();
-        alert.setAlertCode(alertCode);
-        alert.setAlertType("SECURITY");
-        alert.setSeverity(severity);
-        alert.setLocation(title);
-        alert.setMessage(content);
-        alert.setSenderUsername(senderUser);
-        alert.setSenderIp(senderIp);
-
-        int alertId = alertDAO.insertAlert(alert);
-        if (alertId > 0) {
-            alert.setId(alertId);
-            boolean sent = MulticastSender.sendAlert(alert);
-            if (sent) {
-                JOptionPane.showMessageDialog(this, "Đã phát cảnh báo thành công qua UDP Multicast!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                clearForm();
-                loadAlertHistory();
-            } else {
-                JOptionPane.showMessageDialog(this, "Cảnh báo đã lưu vào DB nhưng lỗi phát UDP Multicast!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Không thể lưu cảnh báo vào cơ sở dữ liệu!", "Lỗi DB", JOptionPane.ERROR_MESSAGE);
+        // Xác nhận trước khi phát CRITICAL
+        if ("CRITICAL".equals(severity)) {
+            int confirm = JOptionPane.showConfirmDialog(this,
+                "⚠️ Bạn sắp phát cảnh báo mức CRITICAL!\nThao tác này sẽ NGAY LẬP TỨC phát đến tất cả máy trạm.\n\nXác nhận phát?",
+                "Xác nhận phát cảnh báo CRITICAL", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) return;
         }
+
+        // Loading cursor
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        btnSendAlert.setEnabled(false);
+        btnSendAlert.setText("Đang phát...");
+
+        String finalSeverity = severity;
+        String finalAlertType = alertType;
+        String finalLocation = location;
+        String finalTitle = title;
+        String finalContent = content;
+
+        SwingWorker<Integer, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Integer doInBackground() {
+                String alertCode = "ALT-" + System.currentTimeMillis() % 100000;
+                String senderUser = currentUser != null ? currentUser.getUsername() : "admin";
+                String senderIp = "127.0.0.1";
+                try { senderIp = InetAddress.getLocalHost().getHostAddress(); } catch (Exception ignored) {}
+
+                Alert alert = new Alert();
+                alert.setAlertCode(alertCode);
+                alert.setAlertType(finalAlertType);
+                alert.setSeverity(finalSeverity);
+                alert.setLocation(finalLocation);
+                alert.setMessage(finalTitle + " - " + finalContent);
+                alert.setSenderUsername(senderUser);
+                alert.setSenderIp(senderIp);
+
+                int alertId = alertDAO.insertAlert(alert);
+                if (alertId > 0) {
+                    alert.setId(alertId);
+                    boolean sent = MulticastSender.sendAlert(alert);
+                    return sent ? alertId : -2;
+                }
+                return -1;
+            }
+
+            @Override
+            protected void done() {
+                setCursor(Cursor.getDefaultCursor());
+                btnSendAlert.setEnabled(true);
+                btnSendAlert.setText("PHÁT CẢNH BÁO");
+                try {
+                    int result = get();
+                    if (result > 0) {
+                        JOptionPane.showMessageDialog(SenderFrame.this,
+                            "✅ Đã phát cảnh báo thành công qua UDP Multicast!\n" +
+                            "Loại: " + finalAlertType + " | Mức độ: " + finalSeverity + "\n" +
+                            "Địa điểm: " + finalLocation,
+                            "Phát Thành Công", JOptionPane.INFORMATION_MESSAGE);
+                        clearForm();
+                        loadAlertHistory();
+                    } else if (result == -2) {
+                        JOptionPane.showMessageDialog(SenderFrame.this,
+                            "⚠️ Cảnh báo đã lưu vào DB nhưng lỗi phát UDP Multicast!",
+                            "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                        loadAlertHistory();
+                    } else {
+                        JOptionPane.showMessageDialog(SenderFrame.this,
+                            "❌ Không thể lưu cảnh báo vào cơ sở dữ liệu!",
+                            "Lỗi DB", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(SenderFrame.this, "Lỗi: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void loadAlertHistory() {
@@ -303,11 +543,41 @@ public class SenderFrame extends javax.swing.JFrame {
             tableModel.addRow(new Object[]{
                     a.getId(),
                     a.getAlertCode(),
+                    a.getAlertType() != null ? a.getAlertType() : "",
                     a.getSeverity(),
                     a.getLocation(),
                     a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
             });
         }
+    }
+
+    /**
+     * Tô màu dòng bảng theo mức độ severity.
+     */
+    private void applySeverityColorRenderer() {
+        tblSentAlerts.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    // Lấy giá trị severity từ cột 3 (Mức độ)
+                    Object sev = table.getModel().getValueAt(row, 3);
+                    String severity = sev != null ? sev.toString() : "";
+                    Color rowBg;
+                    switch (severity.toUpperCase()) {
+                        case "CRITICAL": rowBg = new Color(80, 20, 20); break;
+                        case "HIGH":     rowBg = new Color(80, 45, 15); break;
+                        case "MEDIUM":   rowBg = new Color(70, 60, 10); break;
+                        case "LOW":      rowBg = new Color(15, 60, 30); break;
+                        default:         rowBg = (row % 2 == 0) ? UITheme.BG_DARK_SECONDARY : UITheme.BG_DARK_PRIMARY;
+                    }
+                    c.setBackground(rowBg);
+                    c.setForeground(UITheme.TEXT_PRIMARY);
+                }
+                return c;
+            }
+        });
     }
 
     private void deleteSelectedAlert() {
