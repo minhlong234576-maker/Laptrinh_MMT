@@ -11,8 +11,10 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -118,11 +120,11 @@ public class HistoryFrame extends javax.swing.JFrame {
         filterPanel.add(txtSearchKey);
 
         btnFilter.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
-        btnFilter.setText("🔍 Lọc Dữ Liệu");
+        btnFilter.setText("Lọc Dữ Liệu");
         filterPanel.add(btnFilter);
 
         btnResetFilter.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        btnResetFilter.setText("🔄 Đặt Lại");
+        btnResetFilter.setText("Đặt Lại");
         filterPanel.add(btnResetFilter);
 
         contentContainer.add(filterPanel, java.awt.BorderLayout.NORTH);
@@ -152,11 +154,11 @@ public class HistoryFrame extends javax.swing.JFrame {
         actionPanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
 
         btnViewDetails.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
-        btnViewDetails.setText("👁️ Xem Chi Tiết & Phản Hồi");
+        btnViewDetails.setText("Xem Chi Tiết & Phản Hồi");
         actionPanel.add(btnViewDetails);
 
         btnExportCSV.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        btnExportCSV.setText("📥 Xuất File CSV");
+        btnExportCSV.setText("Xuất File CSV");
         actionPanel.add(btnExportCSV);
 
         tablePanel.add(actionPanel, java.awt.BorderLayout.SOUTH);
@@ -286,7 +288,9 @@ public class HistoryFrame extends javax.swing.JFrame {
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-            try (FileWriter fw = new FileWriter(fileToSave)) {
+            try (OutputStreamWriter fw = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
+                // Thêm BOM để Excel nhận diện UTF-8
+                fw.write('\ufeff');
                 for (int i = 0; i < tableModel.getColumnCount(); i++) {
                     fw.write(tableModel.getColumnName(i) + (i == tableModel.getColumnCount() - 1 ? "" : ","));
                 }

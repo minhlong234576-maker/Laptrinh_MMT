@@ -82,19 +82,19 @@ public class MainMenuFrame extends javax.swing.JFrame {
         menuContainer.setLayout(new java.awt.GridLayout(2, 2, 20, 20));
 
         btnSender.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
-        btnSender.setText("<html><center><font size=5>📡 GỬI CẢNH BÁO</font><br><font color=#aaaaaa size=3>Tạo &amp; phát bản tin khẩn cấp</font></center></html>");
+        btnSender.setText("<html><center><font size=5>GỬI CẢNH BÁO</font><br><font color=#aaaaaa size=3>Tạo &amp; phát bản tin khẩn cấp</font></center></html>");
         menuContainer.add(btnSender);
 
         btnReceiver.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
-        btnReceiver.setText("<html><center><font size=5>🔔 NHẬN CẢNH BÁO</font><br><font color=#aaaaaa size=3>Theo dõi &amp; tiếp nhận cảnh báo</font></center></html>");
+        btnReceiver.setText("<html><center><font size=5>NHẬN CẢNH BÁO</font><br><font color=#aaaaaa size=3>Theo dõi &amp; tiếp nhận cảnh báo</font></center></html>");
         menuContainer.add(btnReceiver);
 
         btnHistory.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
-        btnHistory.setText("<html><center><font size=5>📜 LỊCH SỬ &amp; TÌM KIẾM</font><br><font color=#aaaaaa size=3>Tra cứu nhật ký phát tin &amp; báo nhận</font></center></html>");
+        btnHistory.setText("<html><center><font size=5>LỊCH SỬ &amp; TÌM KIẾM</font><br><font color=#aaaaaa size=3>Tra cứu nhật ký phát tin &amp; báo nhận</font></center></html>");
         menuContainer.add(btnHistory);
 
         btnLogout.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
-        btnLogout.setText("<html><center><font size=5>🚪 ĐĂNG XUẤT</font><br><font color=#aaaaaa size=3>Thoát phiên làm việc hiện tại</font></center></html>");
+        btnLogout.setText("<html><center><font size=5>ĐĂNG XUẤT</font><br><font color=#aaaaaa size=3>Thoát phiên làm việc hiện tại</font></center></html>");
         menuContainer.add(btnLogout);
 
         getContentPane().add(menuContainer, java.awt.BorderLayout.CENTER);

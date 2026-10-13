@@ -92,7 +92,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
 
         lblStatus.setFont(new java.awt.Font("Segoe UI", 1, 13)); // NOI18N
         lblStatus.setForeground(new java.awt.Color(102, 255, 102));
-        lblStatus.setText("🟢 Đang lắng nghe tín hiệu Multicast (239.10.10.10:5000)...");
+        lblStatus.setText("Đang lắng nghe tín hiệu Multicast (239.10.10.10:5000)...");
         headerLeft.add(lblStatus);
 
         headerPanel.add(headerLeft, java.awt.BorderLayout.WEST);
@@ -142,7 +142,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
         actionPanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
 
         btnConfirmReceipt.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        btnConfirmReceipt.setText("✅ XÁC NHẬN ĐÃ NHẬN TIN (ACK)");
+        btnConfirmReceipt.setText("XÁC NHẬN ĐÃ NHẬN TIN (ACK)");
         btnConfirmReceipt.setEnabled(false);
         actionPanel.add(btnConfirmReceipt);
 
@@ -175,7 +175,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
         historyButtonPanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
 
         btnRefreshHistory.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        btnRefreshHistory.setText("🔄 Tải Lại Lịch Sử");
+        btnRefreshHistory.setText("Tải Lại Lịch Sử");
         historyButtonPanel.add(btnRefreshHistory);
 
         historyPanel.add(historyButtonPanel, java.awt.BorderLayout.SOUTH);
@@ -190,7 +190,11 @@ public class ReceiverFrame extends javax.swing.JFrame {
     private void setupEvents() {
         btnBack.addActionListener(e -> {
             stopListening();
-            new MainMenuFrame(currentUser).setVisible(true);
+            if (currentUser != null && "RECEIVER".equalsIgnoreCase(currentUser.getRole())) {
+                new LoginFrame().setVisible(true);
+            } else {
+                new MainMenuFrame(currentUser).setVisible(true);
+            }
             this.dispose();
         });
 
@@ -222,7 +226,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
     private void onAlertReceived(Alert alert) {
         SwingUtilities.invokeLater(() -> {
             this.currentAlert = alert;
-            lblAlertTitle.setText("⚠️ " + alert.getLocation());
+            lblAlertTitle.setText(alert.getLocation());
             lblSeverity.setText("Mức độ: " + alert.getSeverity() + " | Mã tin: " + alert.getAlertCode() + " | Người phát: " + alert.getSenderUsername());
             txtAlertContent.setText(alert.getMessage());
             btnConfirmReceipt.setEnabled(true);

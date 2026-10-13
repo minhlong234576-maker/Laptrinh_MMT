@@ -211,7 +211,7 @@
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="14" style="1"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="🚀 PHÁT CẢNH BÁO"/>
+                    <Property name="text" type="java.lang.String" value="PH&#xc1;T C&#x1ea2;NH B&#xc1;O"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="btnClearForm">
@@ -219,7 +219,7 @@
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="14" style="0"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="🧹 Làm Mới"/>
+                    <Property name="text" type="java.lang.String" value="L&#xe0;m M&#x1edb;i"/>
                   </Properties>
                 </Component>
               </SubComponents>
@@ -291,7 +291,7 @@
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="13" style="0"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="🔄 Tải Lại"/>
+                    <Property name="text" type="java.lang.String" value="T&#x1ea3;i L&#x1ea1;i"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JButton" name="btnDeleteAlert">
@@ -299,7 +299,7 @@
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="13" style="0"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="🗑️ Xóa Bản Tin"/>
+                    <Property name="text" type="java.lang.String" value="X&#xf3;a B&#x1ea3;n Tin"/>
                   </Properties>
                 </Component>
               </SubComponents>

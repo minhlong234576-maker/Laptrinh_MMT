@@ -240,4 +240,25 @@ public class AlertDAO {
         alert.setCreatedAt(rs.getTimestamp("created_at"));
         return alert;
     }
+
+    /**
+     * Xóa một bản ghi cảnh báo khỏi cơ sở dữ liệu dựa trên ID.
+     * @param id Khóa chính của alert cần xóa
+     * @return true nếu xóa thành công, ngược lại là false
+     */
+    public boolean deleteAlert(int id) {
+        String sql = "DELETE FROM alerts WHERE id = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Lỗi thực thi deleteAlert(): " + e.getMessage());
+        }
+        return false;
+    }
 }

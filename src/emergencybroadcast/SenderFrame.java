@@ -171,11 +171,11 @@ public class SenderFrame extends javax.swing.JFrame {
         formButtonPanel.setLayout(new java.awt.GridLayout(1, 2, 10, 0));
 
         btnSendAlert.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        btnSendAlert.setText("🚀 PHÁT CẢNH BÁO");
+        btnSendAlert.setText("PHÁT CẢNH BÁO");
         formButtonPanel.add(btnSendAlert);
 
         btnClearForm.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        btnClearForm.setText("🧹 Làm Mới");
+        btnClearForm.setText("Làm Mới");
         formButtonPanel.add(btnClearForm);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -213,11 +213,11 @@ public class SenderFrame extends javax.swing.JFrame {
         tableButtonPanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
 
         btnRefreshTable.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        btnRefreshTable.setText("🔄 Tải Lại");
+        btnRefreshTable.setText("Tải Lại");
         tableButtonPanel.add(btnRefreshTable);
 
         btnDeleteAlert.setFont(new java.awt.Font("Segoe UI", 0, 13)); // NOI18N
-        btnDeleteAlert.setText("🗑️ Xóa Bản Tin");
+        btnDeleteAlert.setText("Xóa Bản Tin");
         tableButtonPanel.add(btnDeleteAlert);
 
         tablePanel.add(tableButtonPanel, java.awt.BorderLayout.SOUTH);
@@ -238,6 +238,7 @@ public class SenderFrame extends javax.swing.JFrame {
         btnClearForm.addActionListener(e -> clearForm());
         btnSendAlert.addActionListener(e -> performSendAlert());
         btnRefreshTable.addActionListener(e -> loadAlertHistory());
+        btnDeleteAlert.addActionListener(e -> deleteSelectedAlert());
     }
 
     private void clearForm() {
@@ -306,6 +307,26 @@ public class SenderFrame extends javax.swing.JFrame {
                     a.getLocation(),
                     a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
             });
+        }
+    }
+
+    private void deleteSelectedAlert() {
+        int selectedRow = tblSentAlerts.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn một bản tin để xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa bản tin cảnh báo này không? Thao tác này sẽ xóa cả lịch sử phản hồi liên quan.", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            int alertId = (int) tableModel.getValueAt(selectedRow, 0);
+            boolean success = alertDAO.deleteAlert(alertId);
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Đã xóa bản tin thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                loadAlertHistory();
+            } else {
+                JOptionPane.showMessageDialog(this, "Không thể xóa bản tin. Có lỗi xảy ra!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
