@@ -14,11 +14,11 @@ import java.awt.event.WindowEvent;
 import java.net.InetAddress;
 
 /**
- * QuickAlertFrame – Màn hình phát cảnh báo KHẨN CẤP 1 chạm.
+ * QuickAlertFrame - Màn hình phát cảnh báo KHẨN CẤP 1 chạm.
  *
  * Thiết kế tối giản:
  *  - Chỉ cần chọn ĐỊA ĐIỂM (danh sách gợi ý + tự gõ)
- *  - Nhấn 1 nút to = PHÁT NGAY – không cần điền form
+ *  - Nhấn 1 nút to = PHÁT NGAY - không cần điền form
  *  - Phím tắt F1-F5 phát từng loại sự cố
  *  - Phím ESC để đóng
  *  - Kết quả hiện trên status bar (không popup chặn)
@@ -38,8 +38,8 @@ public class QuickAlertFrame extends javax.swing.JFrame {
     // Cấu hình các loại cảnh báo nhanh
     // { tên hiển thị, emoji, alertType, severity, color, nội dung mặc định }
     private static final Object[][] QUICK_TYPES = {
-        {"CHÁY / LỬA",  "🔥", "FIRE",     "CRITICAL", new Color(200, 30,  30),  "Phát hiện cháy! Sơ tán khẩn cấp theo lối thoát hiểm!"},
-        {"KHÍ ĐỘC",     "☠", "GAS",      "CRITICAL", new Color(150, 50, 180),  "Rò rỉ khí độc! Di chuyển ra ngoài ngay lập tức!"},
+        {"CHÁY / LỬA",  "", "FIRE",     "CRITICAL", new Color(200, 30,  30),  "Phát hiện cháy! Sơ tán khẩn cấp theo lối thoát hiểm!"},
+        {"KHÍ ĐỘC",     "X", "GAS",      "CRITICAL", new Color(150, 50, 180),  "Rò rỉ khí độc! Di chuyển ra ngoài ngay lập tức!"},
         {"AN NINH",     "!", "SECURITY", "HIGH",     new Color(220, 100,  0),  "Phát hiện xâm nhập! Liên hệ bảo vệ ngay!"},
         {"MẤT ĐIỆN",    "*", "POWER",    "HIGH",     new Color(200, 160,  0),  "Mất điện toàn bộ! Kích hoạt nguồn dự phòng!"},
         {"LŨ / NGẬP",   "~", "FLOOD",    "HIGH",     new Color( 30, 100, 200),  "Cảnh báo ngập lụt! Di chuyển lên tầng cao!"},
@@ -151,7 +151,7 @@ public class QuickAlertFrame extends javax.swing.JFrame {
         bottomPanel.setBackground(UITheme.BG_DARK_PRIMARY);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 15, 20));
 
-        lblStatusMsg = new JLabel("  He thong san sang – Chon dia diem va nhan loai su co de phat ngay.");
+        lblStatusMsg = new JLabel("  He thong san sang - Chon dia diem va nhan loai su co de phat ngay.");
         lblStatusMsg.setFont(UITheme.FONT_BODY);
         lblStatusMsg.setForeground(UITheme.TEXT_SECONDARY);
         lblStatusMsg.setOpaque(true);
@@ -230,7 +230,15 @@ public class QuickAlertFrame extends javax.swing.JFrame {
     }
 
     /**
-     * PHÁT NHANH – luồng tối giản 3 bước:
+     * Sinh mã tin duy nhất, tránh trùng UNIQUE trong DB.
+     */
+    private static String newAlertCode(String prefix) {
+        return prefix + "-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date())
+            + "-" + (100 + new java.util.Random().nextInt(900));
+    }
+
+    /**
+     * PHÁT NHANH - luồng tối giản 3 bước:
      *  1. Lấy địa điểm từ combobox
      *  2. Gửi DB + UDP trên background thread (không block UI)
      *  3. Hiển thị kết quả trên status bar
@@ -261,7 +269,7 @@ public class QuickAlertFrame extends javax.swing.JFrame {
         // Chạy hoàn toàn trên background thread
         new Thread(() -> {
             try {
-                String alertCode = "QUICK-" + System.currentTimeMillis() % 100000;
+                String alertCode = newAlertCode("QUICK");
                 String senderUser = (currentUser != null) ? currentUser.getUsername() : "admin";
                 String senderIp = "127.0.0.1";
                 try { senderIp = InetAddress.getLocalHost().getHostAddress(); } catch (Exception ignored) {}
@@ -275,12 +283,21 @@ public class QuickAlertFrame extends javax.swing.JFrame {
                 alert.setSenderUsername(senderUser);
                 alert.setSenderIp(senderIp);
 
-                // 1. Lưu DB
+                // 1. Lưu DB - BẮT BUỘC thành công mới được phát UDP
                 int alertId = alertDAO.insertAlert(alert);
-                if (alertId > 0) alert.setId(alertId);
+                if (alertId <= 0) {
+                    SwingUtilities.invokeLater(() ->
+                        setStatusError("Loi luu DB! Kiem tra MySQL/XAMPP da bat chua (db.properties)."));
+                    return;
+                }
+                alert.setId(alertId);
 
                 // 2. Phát UDP Multicast
                 boolean sent = MulticastSender.sendAlert(alert);
+                if (sent) {
+                    // Day thang lên Telegram ngay khi phat (khong doi may nhan)
+                    emergencybroadcast.network.TelegramNotifier.notifyAsync(alert);
+                }
 
                 final boolean success = sent;
                 final int id = alertId;
@@ -312,12 +329,12 @@ public class QuickAlertFrame extends javax.swing.JFrame {
 
     private void setStatusSuccess(String label, String location, Color color) {
         lblStatusMsg.setText("  DA PHAT THANH CONG: " + label
-            + " tai [" + location + "] – Tat ca may tram da nhan tin hieu!");
+            + " tai [" + location + "] - Tat ca may tram da nhan tin hieu!");
         lblStatusMsg.setForeground(new Color(100, 255, 120));
         lblStatusMsg.setBackground(new Color(15, 50, 20));
         // Tự reset về sẵn sàng sau 8 giây
         statusClearTimer = new javax.swing.Timer(8000, e -> {
-            lblStatusMsg.setText("  He thong san sang – Chon dia diem va nhan loai su co de phat ngay.");
+            lblStatusMsg.setText("  He thong san sang - Chon dia diem va nhan loai su co de phat ngay.");
             lblStatusMsg.setForeground(UITheme.TEXT_SECONDARY);
             lblStatusMsg.setBackground(UITheme.BG_DARK_SECONDARY);
         });

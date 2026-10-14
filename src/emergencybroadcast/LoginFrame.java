@@ -1,6 +1,7 @@
 package emergencybroadcast;
 
 import emergencybroadcast.dao.UserDAO;
+import emergencybroadcast.database.DatabaseConnection;
 import emergencybroadcast.model.User;
 import emergencybroadcast.ui.UITheme;
 
@@ -19,6 +20,7 @@ public class LoginFrame extends javax.swing.JFrame {
         userDAO = new UserDAO();
         initComponents();
         setupEvents();
+        addDbStatusLabel();
         
         // Tùy chỉnh màu sắc bằng UITheme
         UITheme.styleTextField(txtUsername);
@@ -153,6 +155,35 @@ public class LoginFrame extends javax.swing.JFrame {
         txtPassword.addActionListener(e -> performLogin());
     }
 
+    private javax.swing.JLabel lblDbStatus;
+
+    private void addDbStatusLabel() {
+        lblDbStatus = new javax.swing.JLabel("  Đang kiểm tra MySQL...", javax.swing.SwingConstants.CENTER);
+        lblDbStatus.setFont(new java.awt.Font("Segoe UI", 0, 12));
+        lblDbStatus.setForeground(new java.awt.Color(148, 163, 184));
+        getContentPane().add(lblDbStatus, java.awt.BorderLayout.SOUTH);
+        // Kiểm tra DB nền để không treo UI
+        new javax.swing.SwingWorker<Boolean, Void>() {
+            @Override protected Boolean doInBackground() {
+                return DatabaseConnection.testConnection();
+            }
+            @Override protected void done() {
+                try {
+                    boolean ok = get();
+                    if (ok) {
+                        lblDbStatus.setText("  [OK] MySQL: " + DatabaseConnection.getStatusMessage());
+                        lblDbStatus.setForeground(new java.awt.Color(52, 211, 153));
+                    } else {
+                        lblDbStatus.setText("  [LOI] Chưa kết nối MySQL - hãy bật XAMPP -> Start MySQL, kiểm tra db.properties");
+                        lblDbStatus.setForeground(new java.awt.Color(251, 113, 133));
+                    }
+                } catch (Exception ex) {
+                    lblDbStatus.setText("  [LOI] Lỗi kiểm tra DB: " + ex.getMessage());
+                }
+            }
+        }.execute();
+    }
+
     private void performLogin() {
         String username = txtUsername.getText().trim();
         String password = new String(txtPassword.getPassword()).trim();
@@ -163,6 +194,21 @@ public class LoginFrame extends javax.swing.JFrame {
         }
 
         lblError.setText("");
+        // Phân biệt DB-down vs sai mật khẩu (đỡ mất giờ debug)
+        boolean dbOk;
+        try {
+            dbOk = DatabaseConnection.testConnection();
+        } catch (Exception ex) {
+            dbOk = false;
+        }
+        if (!dbOk) {
+            lblError.setText("Không kết nối được MySQL! Bật XAMPP -> Start MySQL.");
+            if (lblDbStatus != null) {
+                lblDbStatus.setText("  [LOI] " + DatabaseConnection.getStatusMessage() + " - kiểm tra XAMPP/db.properties");
+                lblDbStatus.setForeground(new java.awt.Color(251, 113, 133));
+            }
+            return;
+        }
         User user = userDAO.login(username, password);
 
         if (user != null) {

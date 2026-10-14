@@ -20,8 +20,10 @@ public class MainMenuFrame extends javax.swing.JFrame {
         this.currentUser = user;
         initComponents();
         setupUserInfo();
+        styleMenuButtons(); // phải trước setupEvents vì nút QuickAlert được tạo ở đây
         setupEvents();
-        styleMenuButtons();
+        // Luong poll ticket Telegram (singleton, chay 1 lan duy nhat)
+        emergencybroadcast.network.TelegramInboxService.getInstance().start();
 
         setSize(780, 580);
         setLocationRelativeTo(null);
@@ -37,11 +39,13 @@ public class MainMenuFrame extends javax.swing.JFrame {
         btnSender.setBackground(UITheme.BG_DARK_CARD);
         btnReceiver.setBackground(UITheme.BG_DARK_CARD);
         btnHistory.setBackground(UITheme.BG_DARK_CARD);
+        btnTelegramInbox.setBackground(UITheme.BG_DARK_CARD);
         btnLogout.setBackground(UITheme.BG_DARK_CARD);
 
         btnSender.setForeground(Color.WHITE);
         btnReceiver.setForeground(Color.WHITE);
         btnHistory.setForeground(Color.WHITE);
+        btnTelegramInbox.setForeground(Color.WHITE);
         btnLogout.setForeground(UITheme.ACCENT_ROSE);
 
         // ===== Nút KHẨN CẤP to đỏ nổi bật =====
@@ -49,7 +53,7 @@ public class MainMenuFrame extends javax.swing.JFrame {
         btnQuickAlert.setFont(new Font("Segoe UI", Font.BOLD, 20));
         btnQuickAlert.setText("<html><center>" +
             "<font size=5>PHÁT CẢNH BÁO KHẨN CẤP NGAY</font><br>" +
-            "<font color=#ffcccc size=3>1 click = phát tức thì • Cháy / Khí Độc / An Ninh / Mất Điện / Lũ</font>" +
+            "<font color=#ffcccc size=3>1 click = phát tức thì - Cháy / Khí Độc / An Ninh / Mất Điện / Lũ</font>" +
             "</center></html>");
         btnQuickAlert.setBackground(new Color(180, 20, 20));
         btnQuickAlert.setForeground(Color.WHITE);
@@ -106,6 +110,7 @@ public class MainMenuFrame extends javax.swing.JFrame {
         btnSender = new javax.swing.JButton();
         btnReceiver = new javax.swing.JButton();
         btnHistory = new javax.swing.JButton();
+        btnTelegramInbox = new javax.swing.JButton();
         btnLogout = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -129,7 +134,7 @@ public class MainMenuFrame extends javax.swing.JFrame {
         getContentPane().add(headerPanel, java.awt.BorderLayout.PAGE_START);
 
         menuContainer.setBorder(javax.swing.BorderFactory.createEmptyBorder(30, 30, 30, 30));
-        menuContainer.setLayout(new java.awt.GridLayout(2, 2, 20, 20));
+        menuContainer.setLayout(new java.awt.GridLayout(3, 2, 20, 20));
 
         btnSender.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
         btnSender.setText("<html><center><font size=5>GỬI CẢNH BÁO</font><br><font color=#aaaaaa size=3>Tạo &amp; phát bản tin khẩn cấp</font></center></html>");
@@ -143,6 +148,10 @@ public class MainMenuFrame extends javax.swing.JFrame {
         btnHistory.setText("<html><center><font size=5>LỊCH SỬ &amp; TÌM KIẾM</font><br><font color=#aaaaaa size=3>Tra cứu nhật ký phát tin &amp; báo nhận</font></center></html>");
         menuContainer.add(btnHistory);
 
+        btnTelegramInbox.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
+        btnTelegramInbox.setText("<html><center><font size=5>THÔNG BÁO TELEGRAM</font><br><font color=#aaaaaa size=3>Ticket người dùng gửi lên qua bot</font></center></html>");
+        menuContainer.add(btnTelegramInbox);
+
         btnLogout.setFont(new java.awt.Font("Segoe UI", 1, 16)); // NOI18N
         btnLogout.setText("<html><center><font size=5>ĐĂNG XUẤT</font><br><font color=#aaaaaa size=3>Thoát phiên làm việc hiện tại</font></center></html>");
         menuContainer.add(btnLogout);
@@ -153,10 +162,12 @@ public class MainMenuFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void setupEvents() {
-        // Nút khẩn cấp 1-click
-        btnQuickAlert.addActionListener(e -> {
-            new QuickAlertFrame(currentUser).setVisible(true);
-        });
+        // Nút khẩn cấp 1-click (defense-in-depth: guard null nếu style chưa chạy)
+        if (btnQuickAlert != null) {
+            btnQuickAlert.addActionListener(e -> {
+                new QuickAlertFrame(currentUser).setVisible(true);
+            });
+        }
 
         btnSender.addActionListener(e -> {
             new SenderFrame(currentUser).setVisible(true);
@@ -173,6 +184,10 @@ public class MainMenuFrame extends javax.swing.JFrame {
             this.dispose();
         });
 
+        btnTelegramInbox.addActionListener(e -> {
+            new TelegramInboxFrame(currentUser).setVisible(true);
+        });
+
         btnLogout.addActionListener(e -> {
             new LoginFrame().setVisible(true);
             this.dispose();
@@ -184,11 +199,14 @@ public class MainMenuFrame extends javax.swing.JFrame {
             javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_Q, KeyEvent.CTRL_DOWN_MASK),
             javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW
         );
-        btnQuickAlert.setToolTipText("Mở phát nhanh (Ctrl+Q)");
+        if (btnQuickAlert != null) {
+            btnQuickAlert.setToolTipText("Mở phát nhanh (Ctrl+Q)");
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnHistory;
+    private javax.swing.JButton btnTelegramInbox;
     private javax.swing.JButton btnLogout;
     private javax.swing.JButton btnReceiver;
     private javax.swing.JButton btnSender;

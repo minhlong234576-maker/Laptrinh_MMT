@@ -34,6 +34,13 @@ public class ReceiverFrame extends javax.swing.JFrame {
 
     // ---- Status bar ----
     private JLabel lblStatusBar;
+    // Chống spam popup khi nhiều gói tới dồn dập
+    private volatile boolean popupShowing = false;
+    private volatile long lastPopupTime = 0;
+
+    // Nút + listener ô Thông báo Telegram
+    private javax.swing.JButton btnTelegramInbox;
+    private emergencybroadcast.network.TelegramInboxService.OnTicketsChangedListener inboxListener;
 
     public ReceiverFrame(User user) {
         this.currentUser = user;
@@ -41,6 +48,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
         initComponents();
         setupCustomStyles();
         setupEvents();
+        setupTelegramInbox();
         startListening();
         loadReceiptHistory();
 
@@ -74,7 +82,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
         try {
             String ip = InetAddress.getLocalHost().getHostAddress();
             String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
-            lblStatusBar.setText("  🖥 IP máy trạm: " + ip + "   |   👤 " + user + "   |   🌐 Đang lắng nghe: 239.10.10.10:5000");
+            lblStatusBar.setText("   IP máy trạm: " + ip + "   |    " + user + "   |    Đang lắng nghe: 239.10.10.10:5000");
         } catch (Exception e) {
             lblStatusBar.setText("Đang lắng nghe UDP Multicast...");
         }
@@ -235,6 +243,39 @@ public class ReceiverFrame extends javax.swing.JFrame {
         btnRefreshHistory.addActionListener(e -> loadReceiptHistory());
     }
 
+    /**
+     * Gắn nút "Thông báo Telegram" + badge chưa đọc (cho vai trò RECEIVER).
+     * Service poll là singleton nên gọi start() nhiều lần vẫn an toàn.
+     */
+    private void setupTelegramInbox() {
+        emergencybroadcast.network.TelegramInboxService inbox =
+                emergencybroadcast.network.TelegramInboxService.getInstance();
+        inbox.start();
+        btnTelegramInbox = new javax.swing.JButton("Thông báo Telegram");
+        btnTelegramInbox.setFont(UITheme.FONT_SMALL_BOLD);
+        btnTelegramInbox.setToolTipText("Xem ticket người dùng gửi lên qua bot Telegram");
+        btnTelegramInbox.addActionListener(e -> new TelegramInboxFrame(currentUser).setVisible(true));
+        historyButtonPanel.add(btnTelegramInbox);
+        updateInboxBadge(inbox);
+        inboxListener = unread -> updateInboxBadge(inbox);
+        inbox.addListener(inboxListener);
+    }
+
+    private void updateInboxBadge(emergencybroadcast.network.TelegramInboxService inbox) {
+        if (btnTelegramInbox == null) return;
+        new SwingWorker<Integer, Void>() {
+            @Override protected Integer doInBackground() {
+                return new emergencybroadcast.dao.TelegramTicketDAO().countUnread();
+            }
+            @Override protected void done() {
+                try {
+                    btnTelegramInbox.setText("Thông báo Telegram (" + get() + " mới)");
+                } catch (Exception ignored) {
+                }
+            }
+        }.execute();
+    }
+
     private void startListening() {
         multicastReceiver = new MulticastReceiver(new MulticastReceiver.OnAlertReceivedListener() {
             @Override
@@ -261,7 +302,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
             this.currentAlert = alert;
 
             // Cập nhật UI
-            lblAlertTitle.setText("⚠️ " + alert.getLocation());
+            lblAlertTitle.setText("[!] " + alert.getLocation());
             lblSeverity.setText("Mức độ: " + alert.getSeverity()
                 + " | Loại: " + alert.getAlertType()
                 + " | Mã tin: " + alert.getAlertCode()
@@ -329,25 +370,33 @@ public class ReceiverFrame extends javax.swing.JFrame {
     }
 
     /**
-     * Hiển thị popup nổi bật thông tin cảnh báo mới.
+     * Hiển thị popup nổi bật thông tin cảnh báo mới (gộp nếu tới dồn dập).
      */
     private void showAlertPopup(Alert alert) {
+        long now = System.currentTimeMillis();
+        // Nếu popup đang hiện hoặc mới hiện <2s trước -> chỉ cập nhật status, không mở dialog mới
+        if (popupShowing || (now - lastPopupTime) < 2000) {
+            lblStatus.setText("[!] Tin mới (" + alert.getSeverity() + "): " + alert.getLocation() + " - xem bảng bên dưới");
+            return;
+        }
+        popupShowing = true;
+        lastPopupTime = now;
         // Chạy sau 200ms để tránh block UI
         javax.swing.Timer popupTimer = new javax.swing.Timer(200, e -> {
             String icon;
             switch (alert.getSeverity().toUpperCase()) {
-                case "CRITICAL": icon = "🚨"; break;
-                case "HIGH":     icon = "⚠️"; break;
-                case "MEDIUM":   icon = "🔶"; break;
-                default:         icon = "ℹ️"; break;
+                case "CRITICAL": icon = "[!]"; break;
+                case "HIGH":     icon = "[!]"; break;
+                case "MEDIUM":   icon = "[-]"; break;
+                default:         icon = "[i]"; break;
             }
 
             String msg = icon + " CẢNH BÁO MỚI NHẬN! " + icon + "\n\n"
-                + "▶ Mức độ:    " + alert.getSeverity() + "\n"
-                + "▶ Loại:       " + alert.getAlertType() + "\n"
-                + "▶ Địa điểm:  " + alert.getLocation() + "\n"
-                + "▶ Mã tin:     " + alert.getAlertCode() + "\n\n"
-                + "💬 Nội dung:\n" + alert.getMessage() + "\n\n"
+                + "- Mức độ:    " + alert.getSeverity() + "\n"
+                + "- Loại:       " + alert.getAlertType() + "\n"
+                + "- Địa điểm:  " + alert.getLocation() + "\n"
+                + "- Mã tin:     " + alert.getAlertCode() + "\n\n"
+                + " Nội dung:\n" + alert.getMessage() + "\n\n"
                 + "Nhấn OK và click 'XÁC NHẬN ĐÃ NHẬN TIN' để gửi ACK.";
 
             int msgType = "CRITICAL".equalsIgnoreCase(alert.getSeverity())
@@ -356,6 +405,8 @@ public class ReceiverFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(ReceiverFrame.this, msg,
                 icon + " CẢNH BÁO: " + alert.getSeverity() + " - " + alert.getAlertType(),
                 msgType);
+            popupShowing = false;
+            lastPopupTime = System.currentTimeMillis();
         });
         popupTimer.setRepeats(false);
         popupTimer.start();
@@ -379,7 +430,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
                     setCursor(Cursor.getDefaultCursor());
                     if (success) {
                         JOptionPane.showMessageDialog(ReceiverFrame.this,
-                            "✅ Đã gửi phản hồi xác nhận (ACK) thành công!",
+                            "[OK] Đã gửi phản hồi xác nhận (ACK) thành công!",
                             "ACK Gửi Thành Công", JOptionPane.INFORMATION_MESSAGE);
                         lblSeverity.setText("Mức độ: " + currentAlert.getSeverity() + " (ĐÃ XÁC NHẬN ACK)");
                         lblSeverity.setForeground(UITheme.ACCENT_EMERALD);
@@ -390,7 +441,7 @@ public class ReceiverFrame extends javax.swing.JFrame {
                     } else {
                         btnConfirmReceipt.setEnabled(true);
                         JOptionPane.showMessageDialog(ReceiverFrame.this,
-                            "❌ Không thể lưu xác nhận vào cơ sở dữ liệu!",
+                            "[LOI] Không thể lưu xác nhận vào cơ sở dữ liệu!",
                             "Lỗi", JOptionPane.ERROR_MESSAGE);
                     }
                 });
@@ -407,19 +458,32 @@ public class ReceiverFrame extends javax.swing.JFrame {
     }
 
     private void loadReceiptHistory() {
-        tableModel.setRowCount(0);
-        List<AlertReceipt> receipts = receiptDAO.getAllReceipts();
-
-        for (AlertReceipt r : receipts) {
-            tableModel.addRow(new Object[]{
-                    r.getId(),
-                    r.getAlertId(),
-                    r.getReceiverName(),
-                    r.getReceiverIp(),
-                    r.getReceivedAt() != null ? r.getReceivedAt().toString() : "",
-                    r.getStatus()
-            });
-        }
+        btnRefreshHistory.setEnabled(false);
+        new javax.swing.SwingWorker<List<AlertReceipt>, Void>() {
+            @Override protected List<AlertReceipt> doInBackground() {
+                return receiptDAO.getAllReceipts();
+            }
+            @Override protected void done() {
+                try {
+                    List<AlertReceipt> receipts = get();
+                    tableModel.setRowCount(0);
+                    for (AlertReceipt r : receipts) {
+                        tableModel.addRow(new Object[]{
+                                r.getId(),
+                                r.getAlertId(),
+                                r.getReceiverName(),
+                                r.getReceiverIp(),
+                                r.getReceivedAt() != null ? r.getReceivedAt().toString() : "",
+                                r.getStatus()
+                        });
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Lỗi tải lịch sử nhận: " + ex.getMessage());
+                } finally {
+                    btnRefreshHistory.setEnabled(true);
+                }
+            }
+        }.execute();
     }
 
     /**
@@ -451,6 +515,9 @@ public class ReceiverFrame extends javax.swing.JFrame {
     @Override
     public void dispose() {
         if (flashTimer != null) flashTimer.stop();
+        if (inboxListener != null) {
+            emergencybroadcast.network.TelegramInboxService.getInstance().removeListener(inboxListener);
+        }
         stopListening();
         super.dispose();
     }

@@ -52,14 +52,14 @@ public class SenderFrame extends javax.swing.JFrame {
 
         tableModel = (DefaultTableModel) tblSentAlerts.getModel();
 
-        // ---- Thêm ComboBox Loại Sự Cố ----
+        // ---- ComboBox Loại Sự Cố NHỎ (cảnh báo nguy cấp đã có ở QuickAlert) ----
+        // Chữ thường, không emoji để khỏi lỗi ô vuông trên Windows
         cmbAlertType = new JComboBox<>(new String[]{
-            "🔥 FIRE - Cháy nổ",
-            "🔒 SECURITY - An ninh",
-            "⚡ POWER - Mất điện",
-            "☠️ GAS - Rò khí độc",
-            "🌊 FLOOD - Lũ lụt",
-            "📢 OTHER - Khác"
+            "MAINTENANCE - Bảo trì hệ thống",
+            "INFO - Thông báo chung",
+            "DRILL - Diễn tập",
+            "MINOR - Sự cố nhẹ",
+            "OTHER - Khác"
         });
         cmbAlertType.setFont(UITheme.FONT_BODY);
         cmbAlertType.setBackground(UITheme.BG_DARK_SECONDARY);
@@ -141,7 +141,7 @@ public class SenderFrame extends javax.swing.JFrame {
         try {
             String ip = InetAddress.getLocalHost().getHostAddress();
             String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
-            lblStatusBar.setText("  🖥 IP: " + ip + "   |   👤 " + user + "   |   🌐 Multicast: 239.10.10.10:5000   |   Ctrl+Q = Phát nhanh khẩn cấp");
+            lblStatusBar.setText("   IP: " + ip + "   |    " + user + "   |    Multicast: 239.10.10.10:5000   |   Ctrl+Q = Phát nhanh khẩn cấp");
         } catch (Exception e) {
             lblStatusBar.setText("Trạng thái hệ thống");
         }
@@ -244,7 +244,7 @@ public class SenderFrame extends javax.swing.JFrame {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 5, 10);
         formPanel.add(lblSeverity, gridBagConstraints);
 
-        cmbSeverity.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "CRITICAL - Cực kỳ khẩn cấp", "HIGH - Khẩn cấp cao", "MEDIUM - Cảnh báo trung bình", "LOW - Thông tin bình thường" }));
+        cmbSeverity.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "HIGH - Khẩn cấp cao", "MEDIUM - Cảnh báo trung bình", "LOW - Thông tin bình thường" }));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -405,6 +405,14 @@ public class SenderFrame extends javax.swing.JFrame {
         btnClearForm.setToolTipText("Làm mới form (Ctrl+L)");
     }
 
+    /**
+     * Sinh mã tin duy nhất, tránh trùng UNIQUE trong DB.
+     */
+    private static String newAlertCode(String prefix) {
+        return prefix + "-" + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date())
+            + "-" + (100 + new java.util.Random().nextInt(900));
+    }
+
     private void clearForm() {
         txtAlertTitle.setText("");
         txtContent.setText("");
@@ -420,24 +428,23 @@ public class SenderFrame extends javax.swing.JFrame {
         String location = (txtLocation != null) ? txtLocation.getText().trim() : title;
 
         String severitySel = (String) cmbSeverity.getSelectedItem();
-        String severity = "CRITICAL";
+        String severity = "HIGH"; // Sender chỉ phát sự cố nhỏ: tối đa HIGH (CRITICAL dùng QuickAlert)
         if (severitySel != null) {
-            if (severitySel.contains("HIGH")) severity = "HIGH";
-            else if (severitySel.contains("MEDIUM")) severity = "MEDIUM";
+            if (severitySel.contains("MEDIUM")) severity = "MEDIUM";
             else if (severitySel.contains("LOW")) severity = "LOW";
+            else severity = "HIGH";
         }
 
-        // Lấy loại sự cố từ ComboBox mới
-        String alertType = "SECURITY";
+        // Lấy loại sự cố NHỎ từ ComboBox (Sender không phát loại nguy cấp)
+        String alertType = "OTHER";
         if (cmbAlertType != null) {
             String typeSel = (String) cmbAlertType.getSelectedItem();
             if (typeSel != null) {
-                if (typeSel.contains("FIRE")) alertType = "FIRE";
-                else if (typeSel.contains("POWER")) alertType = "POWER";
-                else if (typeSel.contains("GAS")) alertType = "GAS";
-                else if (typeSel.contains("FLOOD")) alertType = "FLOOD";
-                else if (typeSel.contains("OTHER")) alertType = "OTHER";
-                else alertType = "SECURITY";
+                if (typeSel.contains("MAINTENANCE")) alertType = "MAINTENANCE";
+                else if (typeSel.contains("INFO")) alertType = "INFO";
+                else if (typeSel.contains("DRILL")) alertType = "DRILL";
+                else if (typeSel.contains("MINOR")) alertType = "MINOR";
+                else alertType = "OTHER";
             }
         }
 
@@ -458,13 +465,8 @@ public class SenderFrame extends javax.swing.JFrame {
             return;
         }
 
-        // Xác nhận trước khi phát CRITICAL
-        if ("CRITICAL".equals(severity)) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                "⚠️ Bạn sắp phát cảnh báo mức CRITICAL!\nThao tác này sẽ NGAY LẬP TỨC phát đến tất cả máy trạm.\n\nXác nhận phát?",
-                "Xác nhận phát cảnh báo CRITICAL", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (confirm != JOptionPane.YES_OPTION) return;
-        }
+        // Sender chỉ phát sự cố nhỏ nên không cần xác nhận CRITICAL
+        // (cảnh báo nguy cấp CRITICAL phát từ màn hình QuickAlert).
 
         // Loading cursor
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -480,7 +482,7 @@ public class SenderFrame extends javax.swing.JFrame {
         SwingWorker<Integer, Void> worker = new SwingWorker<>() {
             @Override
             protected Integer doInBackground() {
-                String alertCode = "ALT-" + System.currentTimeMillis() % 100000;
+                String alertCode = newAlertCode("ALT");
                 String senderUser = currentUser != null ? currentUser.getUsername() : "admin";
                 String senderIp = "127.0.0.1";
                 try { senderIp = InetAddress.getLocalHost().getHostAddress(); } catch (Exception ignored) {}
@@ -498,6 +500,10 @@ public class SenderFrame extends javax.swing.JFrame {
                 if (alertId > 0) {
                     alert.setId(alertId);
                     boolean sent = MulticastSender.sendAlert(alert);
+                    if (sent) {
+                        // Day thang lên Telegram ngay khi phat (khong doi may nhan)
+                        emergencybroadcast.network.TelegramNotifier.notifyAsync(alert);
+                    }
                     return sent ? alertId : -2;
                 }
                 return -1;
@@ -512,7 +518,7 @@ public class SenderFrame extends javax.swing.JFrame {
                     int result = get();
                     if (result > 0) {
                         JOptionPane.showMessageDialog(SenderFrame.this,
-                            "✅ Đã phát cảnh báo thành công qua UDP Multicast!\n" +
+                            "[OK] Đã phát cảnh báo thành công qua UDP Multicast!\n" +
                             "Loại: " + finalAlertType + " | Mức độ: " + finalSeverity + "\n" +
                             "Địa điểm: " + finalLocation,
                             "Phát Thành Công", JOptionPane.INFORMATION_MESSAGE);
@@ -520,12 +526,12 @@ public class SenderFrame extends javax.swing.JFrame {
                         loadAlertHistory();
                     } else if (result == -2) {
                         JOptionPane.showMessageDialog(SenderFrame.this,
-                            "⚠️ Cảnh báo đã lưu vào DB nhưng lỗi phát UDP Multicast!",
+                            "[!] Cảnh báo đã lưu vào DB nhưng lỗi phát UDP Multicast!",
                             "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                         loadAlertHistory();
                     } else {
                         JOptionPane.showMessageDialog(SenderFrame.this,
-                            "❌ Không thể lưu cảnh báo vào cơ sở dữ liệu!",
+                            "[LOI] Không thể lưu cảnh báo vào cơ sở dữ liệu!",
                             "Lỗi DB", JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (Exception ex) {
@@ -538,17 +544,33 @@ public class SenderFrame extends javax.swing.JFrame {
 
     private void loadAlertHistory() {
         tableModel.setRowCount(0);
-        List<Alert> alerts = alertDAO.getAllAlerts();
-        for (Alert a : alerts) {
-            tableModel.addRow(new Object[]{
-                    a.getId(),
-                    a.getAlertCode(),
-                    a.getAlertType() != null ? a.getAlertType() : "",
-                    a.getSeverity(),
-                    a.getLocation(),
-                    a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
-            });
-        }
+        btnRefreshTable.setEnabled(false);
+        new javax.swing.SwingWorker<List<Alert>, Void>() {
+            @Override protected List<Alert> doInBackground() {
+                return alertDAO.getAllAlerts();
+            }
+            @Override protected void done() {
+                try {
+                    List<Alert> alerts = get();
+                    tableModel.setRowCount(0);
+                    for (Alert a : alerts) {
+                        tableModel.addRow(new Object[]{
+                                a.getId(),
+                                a.getAlertCode(),
+                                a.getAlertType() != null ? a.getAlertType() : "",
+                                a.getSeverity(),
+                                a.getLocation(),
+                                a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
+                        });
+                    }
+                } catch (Exception ex) {
+                    javax.swing.JOptionPane.showMessageDialog(SenderFrame.this,
+                        "Lỗi tải lịch sử: " + ex.getMessage(), "Lỗi", javax.swing.JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    btnRefreshTable.setEnabled(true);
+                }
+            }
+        }.execute();
     }
 
     /**

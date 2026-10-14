@@ -47,16 +47,37 @@ CREATE TABLE IF NOT EXISTS alert_receipts (
         ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. THÊM DỮ LIỆU MẪU BAN ĐẦU (SEED DATA)
-INSERT INTO users (username, password, full_name, role) VALUES 
+-- 5. THÊM DỮ LIỆU MẪU BAN ĐẦU (SEED DATA) — chạy lại nhiều lần không lỗi
+INSERT IGNORE INTO users (username, password, full_name, role) VALUES 
 ('admin', 'admin123', 'Quản Trị Viên Hệ Thống', 'ADMIN'),
 ('operator', 'op123', 'Nhân Viên Bảo Vệ Direct', 'OPERATOR'),
 ('receiver1', 'rec123', 'Máy Trạm Phòng 101', 'RECEIVER');
 
--- Thêm 1 cảnh báo mẫu thử nghiệm
-INSERT INTO alerts (alert_code, alert_type, severity, location, message, sender_ip, sender_username) VALUES 
+-- Thêm 1 cảnh báo mẫu thử nghiệm (bỏ qua nếu đã có mã)
+INSERT IGNORE INTO alerts (alert_code, alert_type, severity, location, message, sender_ip, sender_username) VALUES 
 ('ALT-20260922-100000-001', 'FIRE', 'CRITICAL', 'Tầng 3 - Phòng 302', 'Phát hiện khói lớn tại khu vực phòng máy. Vui lòng di chuyển theo cầu thang bộ!', '127.0.0.1', 'admin');
 
 -- Thêm 1 xác nhận nhận mẫu
 INSERT INTO alert_receipts (alert_id, receiver_name, receiver_ip, status) VALUES 
 (1, 'Máy Trạm Phòng 101', '127.0.0.1', 'RECEIVED');
+
+-- 6. BẢNG telegram_tickets (Ticket người dùng tạo bằng cách nhắn cho bot Telegram)
+CREATE TABLE IF NOT EXISTS telegram_tickets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    update_id BIGINT NOT NULL UNIQUE,
+    chat_id VARCHAR(50) NOT NULL,
+    sender_name VARCHAR(150) NOT NULL,
+    username VARCHAR(100) NULL,
+    user_id VARCHAR(50) NULL,
+    phone VARCHAR(30) NULL,
+    room VARCHAR(20) NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'MOI'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Nâng cấp DB cũ (chạy lại nhiều lần không lỗi, MariaDB/MySQL 8)
+ALTER TABLE telegram_tickets ADD COLUMN IF NOT EXISTS username VARCHAR(100) NULL;
+ALTER TABLE telegram_tickets ADD COLUMN IF NOT EXISTS user_id VARCHAR(50) NULL;
+ALTER TABLE telegram_tickets ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NULL;
+ALTER TABLE telegram_tickets ADD COLUMN IF NOT EXISTS room VARCHAR(20) NULL;

@@ -30,6 +30,7 @@ public class HistoryFrame extends javax.swing.JFrame {
     private final AlertReceiptDAO receiptDAO;
     private DefaultTableModel tableModel;
     private JLabel lblStatusBar;
+    private JComboBox<String> cmbTypeFilter;
 
     public HistoryFrame(User user) {
         this.currentUser = user;
@@ -60,6 +61,14 @@ public class HistoryFrame extends javax.swing.JFrame {
         UITheme.styleTable(tblHistory);
         UITheme.styleTextField(txtSearchKey);
         tableModel = (DefaultTableModel) tblHistory.getModel();
+
+        // Thêm lọc theo Loại sự cố (không sửa .form để giữ tương thích NetBeans)
+        cmbTypeFilter = new JComboBox<>(new String[]{"-- Tất cả --", "FIRE", "SECURITY", "POWER", "GAS", "FLOOD", "MAINTENANCE", "INFO", "DRILL", "MINOR", "OTHER"});
+        cmbTypeFilter.setToolTipText("Lọc theo loại sự cố");
+        filterPanel.add(new JLabel("Loại:"), 0);
+        filterPanel.add(cmbTypeFilter, 1);
+        cmbTypeFilter.addActionListener(e -> performFilter());
+        filterPanel.revalidate();
 
         // Tô màu severity trong bảng lịch sử
         tblHistory.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
@@ -104,7 +113,7 @@ public class HistoryFrame extends javax.swing.JFrame {
         lblStatusBar.setOpaque(true);
         lblStatusBar.setBackground(UITheme.BG_DARK_PRIMARY);
         String user = currentUser != null ? currentUser.getUsername() + " (" + currentUser.getRole() + ")" : "?";
-        lblStatusBar.setText("  👤 " + user + "   |   📂 Xuất CSV hỗ trợ Excel (UTF-8 BOM)   |   Ctrl+F: Lọc  |  Ctrl+R: Refresh  |  Ctrl+D: Chi tiết");
+        lblStatusBar.setText("   " + user + "   |    Xuất CSV hỗ trợ Excel (UTF-8 BOM)   |   Ctrl+F: Lọc  |  Ctrl+R: Refresh  |  Ctrl+D: Chi tiết");
         getContentPane().add(lblStatusBar, BorderLayout.PAGE_END);
     }
 
@@ -232,8 +241,9 @@ public class HistoryFrame extends javax.swing.JFrame {
         btnFilter.addActionListener(e -> performFilter());
         btnResetFilter.addActionListener(e -> {
             cmbSeverityFilter.setSelectedIndex(0);
+            if (cmbTypeFilter != null) cmbTypeFilter.setSelectedIndex(0);
             txtSearchKey.setText("");
-            loadHistoryAlerts(null, null);
+            loadHistoryAlerts(null, null, null);
         });
 
         btnViewDetails.addActionListener(e -> viewAlertDetails());
@@ -269,25 +279,50 @@ public class HistoryFrame extends javax.swing.JFrame {
         if (severity != null && severity.startsWith("--")) {
             severity = null;
         }
+        String typeSel = null;
+        if (cmbTypeFilter != null) {
+            Object t = cmbTypeFilter.getSelectedItem();
+            if (t != null && !t.toString().startsWith("--")) typeSel = t.toString();
+        }
         String keyword = txtSearchKey.getText().trim();
         if (keyword.isEmpty()) {
             keyword = null;
         }
         // Loading cursor
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        btnFilter.setEnabled(false);
         final String finalSeverity = severity;
+        final String finalType = typeSel;
         final String finalKeyword = keyword;
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            @Override protected Void doInBackground() {
-                loadHistoryAlerts(finalSeverity, finalKeyword);
-                return null;
+        SwingWorker<List<Alert>, Void> worker = new SwingWorker<>() {
+            @Override protected List<Alert> doInBackground() {
+                return alertDAO.searchAlertsFiltered(finalKeyword, finalType, finalSeverity);
             }
             @Override protected void done() {
                 setCursor(Cursor.getDefaultCursor());
-                if (lblStatusBar != null) {
-                    lblStatusBar.setText("  ↻ Tìm thấy " + tableModel.getRowCount() + " kết quả"
-                        + (finalSeverity != null ? "  |  Mức: " + finalSeverity : "")
-                        + (finalKeyword != null ? "  |  Từ khóa: '" + finalKeyword + "'" : ""));
+                btnFilter.setEnabled(true);
+                try {
+                    List<Alert> alerts = get();
+                    tableModel.setRowCount(0);
+                    for (Alert a : alerts) {
+                        tableModel.addRow(new Object[]{
+                                a.getId(),
+                                a.getAlertCode(),
+                                a.getSeverity(),
+                                a.getLocation(),
+                                a.getSenderUsername() != null ? a.getSenderUsername() : "system",
+                                a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
+                        });
+                    }
+                    if (lblStatusBar != null) {
+                        lblStatusBar.setText("   Tìm thấy " + tableModel.getRowCount() + " kết quả"
+                            + (finalSeverity != null ? "  |  Mức: " + finalSeverity : "")
+                            + (finalType != null ? "  |  Loại: " + finalType : "")
+                            + (finalKeyword != null ? "  |  Từ khóa: '" + finalKeyword + "'" : ""));
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(HistoryFrame.this,
+                        "Lỗi lọc dữ liệu: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
                 }
             }
         };
@@ -295,18 +330,34 @@ public class HistoryFrame extends javax.swing.JFrame {
     }
 
     private void loadHistoryAlerts(String severity, String keyword) {
-        tableModel.setRowCount(0);
-        List<Alert> alerts = alertDAO.searchAlertsFiltered(keyword, null, severity);
-        for (Alert a : alerts) {
-            tableModel.addRow(new Object[]{
-                    a.getId(),
-                    a.getAlertCode(),
-                    a.getSeverity(),
-                    a.getLocation(),
-                    a.getSenderUsername() != null ? a.getSenderUsername() : "system",
-                    a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
-            });
-        }
+        loadHistoryAlerts(severity, keyword, null);
+    }
+
+    private void loadHistoryAlerts(String severity, String keyword, String alertType) {
+        final String s = severity, k = keyword, t = alertType;
+        new SwingWorker<List<Alert>, Void>() {
+            @Override protected List<Alert> doInBackground() {
+                return alertDAO.searchAlertsFiltered(k, t, s);
+            }
+            @Override protected void done() {
+                try {
+                    List<Alert> alerts = get();
+                    tableModel.setRowCount(0);
+                    for (Alert a : alerts) {
+                        tableModel.addRow(new Object[]{
+                                a.getId(),
+                                a.getAlertCode(),
+                                a.getSeverity(),
+                                a.getLocation(),
+                                a.getSenderUsername() != null ? a.getSenderUsername() : "system",
+                                a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""
+                        });
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Lỗi tải lịch sử: " + ex.getMessage());
+                }
+            }
+        }.execute();
     }
 
     private void viewAlertDetails() {
@@ -374,6 +425,16 @@ public class HistoryFrame extends javax.swing.JFrame {
         dialog.setVisible(true);
     }
 
+    /** Escape 1 ô CSV chuẩn RFC4180: bọc "..." nếu chứa , " hoặc xuống dòng. */
+    private static String csvCell(Object val) {
+        if (val == null) return "";
+        String s = val.toString();
+        if (s.contains("\"") || s.contains(",") || s.contains("\n") || s.contains("\r")) {
+            return "\"" + s.replace("\"", "\"\"") + "\"";
+        }
+        return s;
+    }
+
     private void exportToCSV() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Chọn nơi lưu tệp CSV");
@@ -386,15 +447,13 @@ public class HistoryFrame extends javax.swing.JFrame {
                 // Thêm BOM để Excel nhận diện UTF-8
                 fw.write('\ufeff');
                 for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                    fw.write(tableModel.getColumnName(i) + (i == tableModel.getColumnCount() - 1 ? "" : ","));
+                    fw.write(csvCell(tableModel.getColumnName(i)) + (i == tableModel.getColumnCount() - 1 ? "" : ","));
                 }
                 fw.write("\n");
 
                 for (int r = 0; r < tableModel.getRowCount(); r++) {
                     for (int c = 0; c < tableModel.getColumnCount(); c++) {
-                        Object val = tableModel.getValueAt(r, c);
-                        String str = val != null ? val.toString().replace(",", " ") : "";
-                        fw.write(str + (c == tableModel.getColumnCount() - 1 ? "" : ","));
+                        fw.write(csvCell(tableModel.getValueAt(r, c)) + (c == tableModel.getColumnCount() - 1 ? "" : ","));
                     }
                     fw.write("\n");
                 }

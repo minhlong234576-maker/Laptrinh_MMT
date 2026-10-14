@@ -3,3 +3,7 @@ nbproject/private/
 *.class
 *.jar
 !lib/*.jar
+/dist/
+# Chua token rieng tung may — khong commit
+telegram.properties
+db.properties

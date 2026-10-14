@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lớp MulticastReceiver chạy trên một Thread riêng biệt để ngầm lắng nghe các gói tin UDP Multicast
@@ -34,6 +35,9 @@ public class MulticastReceiver implements Runnable {
 
     private OnAlertReceivedListener listener;
     private AlertReceiptDAO receiptDAO;
+    // Chống xử lý trùng 1 gói tin nhận 2 lần (loopback + nhiều NIC) trong 30s
+    private final ConcurrentHashMap<String, Long> recentCodes = new ConcurrentHashMap<>();
+    private static final long DEDUP_WINDOW_MS = 30_000;
 
     /**
      * Interface Callback gửi dữ liệu Alert đã bóc tách về Giao diện ReceiverFrame.
@@ -131,8 +135,29 @@ public class MulticastReceiver implements Runnable {
                 Alert alert = parseRawMessageToAlert(receivedData);
 
                 if (alert != null) {
-                    // 1. Tự động lưu nhật ký nhận vào MySQL Database
-                    saveAlertReceiptToDB(alert, packet.getAddress().getHostAddress());
+                    // Chống trùng: cùng alertCode trong 30s thì bỏ qua
+                    String code = alert.getAlertCode() != null ? alert.getAlertCode() : "";
+                    long now = System.currentTimeMillis();
+                    Long last = recentCodes.get(code);
+                    if (last != null && (now - last) < DEDUP_WINDOW_MS) {
+                        System.out.println("-> [MULTICAST RECEIVER] Bỏ qua gói trùng: " + code);
+                        continue;
+                    }
+                    recentCodes.put(code, now);
+                    // Dọn dẹp cache cũ để khỏi phình
+                    if (recentCodes.size() > 500) {
+                        recentCodes.entrySet().removeIf(e -> (now - e.getValue()) > DEDUP_WINDOW_MS);
+                    }
+
+                    // 1. Tự động lưu nhật ký nhận vào MySQL Database (bỏ qua nếu alertId không hợp lệ)
+                    if (alert.getId() > 0) {
+                        saveAlertReceiptToDB(alert, packet.getAddress().getHostAddress());
+                    } else {
+                        System.out.println("-> [MULTICAST RECEIVER] Bỏ lưu DB vì ALERT_ID không hợp lệ (gói chưa lưu DB ở Sender).");
+                    }
+
+                    // 1b. Đẩy lên Telegram nếu đủ mức khẩn (chạy nền, không block)
+                    TelegramNotifier.notifyAsync(alert);
 
                     // 2. Chuyển đối tượng Alert về Cập nhật Giao diện Swing an toàn trên EDT
                     if (listener != null) {
@@ -200,15 +225,16 @@ public class MulticastReceiver implements Runnable {
      * Lưu bản ghi xác nhận nhận cảnh báo vào bảng alert_receipts trong MySQL.
      */
     private void saveAlertReceiptToDB(Alert alert, String packetSenderIp) {
+        // FIX: không bao giờ đoán ID=1 - ID không hợp lệ thì bỏ qua để khỏi gây FK sai
+        final int alertId = alert.getId();
+        if (alertId <= 0) {
+            System.err.println("-> Bỏ lưu receipt: ALERT_ID không hợp lệ (" + alertId + ").");
+            return;
+        }
         new Thread(() -> {
             try {
                 String receiverName = "Máy Trạm (" + InetAddress.getLocalHost().getHostName() + ")";
                 String receiverIp = InetAddress.getLocalHost().getHostAddress();
-
-                int alertId = alert.getId();
-                if (alertId <= 0) {
-                    alertId = 1; // ID mặc định nếu không parse được alert_id
-                }
 
                 AlertReceipt receipt = new AlertReceipt(alertId, receiverName, receiverIp, "RECEIVED");
                 boolean saved = receiptDAO.insertReceipt(receipt);
